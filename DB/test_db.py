@@ -1,5 +1,5 @@
-from DB.database import engine
-import DB.models as models
+from database import engine
+import models as models
 
 try:
     # Próba nawiązania połączenia z bazą

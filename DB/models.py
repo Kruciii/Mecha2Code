@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, Float, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from DB.database import Base # Pamiętaj o zaimportowaniu swojego Base
+from database import Base # Pamiętaj o zaimportowaniu swojego Base
 
 class Course(Base):
     __tablename__ = "courses"
