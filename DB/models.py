@@ -1,82 +1,93 @@
-from sqlalchemy import Column, Integer, String, Date, Boolean, ForeignKey, DateTime, Text
+from sqlalchemy import Column, Integer, String, Text, Float, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from DB.database import Base
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    user_type = Column(String)  # np. 'admin', 'student'
-    date_of_birth = Column(Date)
-    university = Column(String)
-    degree = Column(String)
-    year = Column(Integer)
-
-class StudentInCourse(Base):
-    __tablename__ = "student_in_course"
-
-    id = Column(Integer, primary_key= True,index = True)
-    EnrolledDate =Column(Date)
-
+from database import Base # Pamiętaj o zaimportowaniu swojego Base
 
 class Course(Base):
     __tablename__ = "courses"
 
     id = Column(Integer, primary_key=True, index=True)
-    tags = Column(String)
-    difficulty = Column(String)
+    title = Column(String(200), nullable=False)
     description = Column(Text)
 
-
-class Excercise(Base):
-    __tablename__ = "exercises"
-
-    id = Column(Integer, primary_key= True,index=True)
-    difficulty = Column(String)
-    description = Column(Text)
+    # Relacja do modułów: jeden kurs -> wiele modułów
+    modules = relationship("Module", back_populates="course", cascade="all, delete-orphan")
 
 
+class Module(Base):
+    __tablename__ = "modules"
 
-class Test(Base):
-    __tablename__ = "tests"
-    
     id = Column(Integer, primary_key=True, index=True)
-    exercise_id = Column(Integer, ForeignKey("exercises.id")) 
-    content = Column(Text) 
-    answer = Column(Text)  
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
+    title = Column(String(200), nullable=False)
+    order_index = Column(Integer, default=1)
 
-    exercise = relationship("Exercise", back_populates="tests")
-    commit_tests = relationship("TestsInCommits", back_populates="test")
+    course = relationship("Course", back_populates="modules")
+    # Relacja do zadań: jeden moduł -> wiele zadań
+    tasks = relationship("Task", back_populates="module", cascade="all, delete-orphan")
 
-class Commit(Base):
-    __tablename__ = "commits"
-    
+
+class Task(Base):
+    __tablename__ = "tasks"
+
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    exercise_id = Column(Integer, ForeignKey("exercises.id")) 
-    source_code = Column(Text, nullable=False) 
-    
-    valid = Column(Boolean, default=False)
-    start_time = Column(DateTime, default=datetime.now())
-    end_time = Column(DateTime)
-    
-    compiler_error_count = Column(Integer, default=0)
+    module_id = Column(Integer, ForeignKey("modules.id"), nullable=False)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=False)
+    time_limit = Column(Float, default=2.0) # w sekundach
+    memory_limit = Column(Integer, default=128000) # w kilobajtach (128MB)
 
-    user = relationship("User", back_populates="commits")
-    exercise = relationship("Exercise", back_populates="commits")
-    test_results = relationship("TestsInCommits", back_populates="commit")
+    module = relationship("Module", back_populates="tasks")
+    test_cases = relationship("TestCase", back_populates="task", cascade="all, delete-orphan")
+    submissions = relationship("TaskSubmission", back_populates="task")
 
 
-class TestsInCommits(Base):
-    __tablename__ = "tests_in_commits"
-    
+class TestCase(Base):
+    __tablename__ = "test_cases"
+
     id = Column(Integer, primary_key=True, index=True)
-    commit_id = Column(Integer, ForeignKey("commits.id"))
-    test_id = Column(Integer, ForeignKey("tests.id"))
-    content = Column(Text) 
-    answer = Column(Text)  
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
+    input_data = Column(Text, nullable=False)
+    expected_output = Column(Text, nullable=False)
+    is_hidden = Column(Boolean, default=False)
 
-    commit = relationship("Commit", back_populates="test_results")
-    test = relationship("Test", back_populates="commit_tests")
+    task = relationship("Task", back_populates="test_cases")
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(150), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    role = Column(String(50), default="student") # np. student, admin, teacher
+
+    submissions = relationship("TaskSubmission", back_populates="user")
+
+
+class TaskSubmission(Base):
+    __tablename__ = "task_submissions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
+    
+    # Dane wysłane
+    source_code = Column(Text, nullable=False)
+    language_id = Column(Integer, default=54) # Domyślnie C++
+    
+    # Wyniki z Judge0
+    judge0_token = Column(String(255))
+    status_id = Column(Integer) # np. 3 to Accepted
+    execution_time = Column(Float)
+    memory_used = Column(Integer)
+    
+    # Telemetria z edytora i EDM
+    attempt_number = Column(Integer, default=1)
+    time_since_last_attempt = Column(Float)
+    is_abandoned = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relacje zwrotne
+    user = relationship("User", back_populates="submissions")
+    task = relationship("Task", back_populates="submissions")
