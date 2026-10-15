@@ -39,8 +39,8 @@ class TaskSubmissionResponse(BaseModel):
     id: int
     user_id: int
     task_id: int
-    language_id: int
-    status_id: Optional[int]
+    language_id: Optional[int] = None
+    status_id: Optional[int] = None
     created_at: datetime
     is_abandoned: bool
 
