@@ -1,0 +1,94 @@
+# MechaCode
+
+## Diagram ERD
+
+```mermaid
+---
+config:
+  layout: elk
+---
+erDiagram
+    COURSE ||--o{ MODULE : "posiada"
+    MODULE ||--o{ TASK : "zawiera"
+    TASK ||--o{ TEST_CASE : "ma"
+    USER ||--o{ TASK_SUBMISSION : "wysyła"
+    TASK ||--o{ TASK_SUBMISSION : "zbiera"
+    TASK_SUBMISSION ||--o{ SUBMISSION_TEST_RESULT : "ma wyniki"
+    TEST_CASE ||--o{ SUBMISSION_TEST_RESULT : "jest sprawdzany"
+
+    COURSE {
+        int id PK
+        string title
+        text description
+    }
+
+    MODULE {
+        int id PK
+        int course_id FK
+        string title
+        int order_index
+    }
+
+    TASK {
+        int id PK
+        int module_id FK
+        string title
+        text description
+        float time_limit "sekundy"
+        int memory_limit "kilobajty"
+    }
+
+    TEST_CASE {
+        int id PK
+        int task_id FK
+        text input_data
+        text expected_output
+        boolean is_hidden
+    }
+
+    USER {
+        int id PK
+        string email
+        string hashed_password
+        string role "student, admin, teacher"
+    }
+
+    TASK_SUBMISSION {
+        int id PK
+        int user_id FK
+        int task_id FK
+        text source_code
+        int language_id "domyślnie 54 (C++)"
+        string judge0_token "token zgodności"
+        int status_id "np. 1 (In Queue), 3 (Accepted)"
+        float score "procent zaliczonych testów"
+        int total_tests
+        int passed_tests
+        int error_count
+        float execution_time
+        int memory_used
+        int attempt_number "telemetria"
+        float time_since_last_attempt "telemetria"
+        boolean is_abandoned "telemetria"
+        datetime created_at
+    }
+
+    SUBMISSION_TEST_RESULT {
+        int id PK
+        int submission_id FK
+        int test_case_id FK
+        string judge0_token
+        int status_id "status wykonania testu"
+        text stdout
+        text stderr
+        text compile_output
+        float execution_time
+        int memory_used
+        boolean passed
+    }
+```
+
+`TASK_SUBMISSION` reprezentuje jedno wysłanie rozwiązania przez użytkownika.
+Judge0 wykonuje każdy przypadek testowy osobno, dlatego jeden submission może
+mieć wiele rekordów `SUBMISSION_TEST_RESULT`. Każdy z nich przechowuje osobny
+token Judge0 oraz wynik konkretnego testu.

@@ -79,6 +79,10 @@ class TaskSubmission(Base):
     # Wyniki z Judge0
     judge0_token = Column(String(255))
     status_id = Column(Integer) # np. 3 to Accepted
+    score = Column(Float)
+    total_tests = Column(Integer, default=0)
+    passed_tests = Column(Integer, default=0)
+    error_count = Column(Integer, default=0)
     execution_time = Column(Float)
     memory_used = Column(Integer)
     
@@ -91,3 +95,31 @@ class TaskSubmission(Base):
     # Relacje zwrotne
     user = relationship("User", back_populates="submissions")
     task = relationship("Task", back_populates="submissions")
+    test_results = relationship(
+        "SubmissionTestResult",
+        back_populates="submission",
+        cascade="all, delete-orphan",
+    )
+
+
+class SubmissionTestResult(Base):
+    __tablename__ = "submission_test_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+    submission_id = Column(
+        Integer,
+        ForeignKey("task_submissions.id"),
+        nullable=False,
+    )
+    test_case_id = Column(Integer, ForeignKey("test_cases.id"), nullable=False)
+    judge0_token = Column(String(255), nullable=False, unique=True)
+    status_id = Column(Integer)
+    stdout = Column(Text)
+    stderr = Column(Text)
+    compile_output = Column(Text)
+    execution_time = Column(Float)
+    memory_used = Column(Integer)
+    passed = Column(Boolean, default=False, nullable=False)
+
+    submission = relationship("TaskSubmission", back_populates="test_results")
+    test_case = relationship("TestCase")

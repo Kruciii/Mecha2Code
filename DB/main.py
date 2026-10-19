@@ -1,13 +1,66 @@
-from fastapi import FastAPI, Depends, HTTPException
+import os
+from datetime import datetime, timedelta, timezone
+
+import jwt
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from database import get_db, engine
 import models
 import schemas
+from judge0_client import Judge0Error, enqueue_batch
 
 # Jeśli tabele jeszcze nie istnieją, ta linijka je stworzy (przydatne przed ustawieniem Alembica)
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="MechaCode API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("Brak zmiennej JWT_SECRET_KEY w pliku .env!")
+
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+
+
+def create_access_token(user: models.User) -> str:
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    payload = {"sub": str(user.id), "email": user.email, "role": user.role, "exp": expires_at}
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> models.User:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Nieprawidłowy lub wygasły token.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = int(payload.get("sub", ""))
+    except (jwt.InvalidTokenError, ValueError, TypeError):
+        raise credentials_exception
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user is None:
+        raise credentials_exception
+    return user
+
 
 # ----------------- USERS -----------------
 @app.get("/users/", response_model=list[schemas.UserResponse])
@@ -25,14 +78,29 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     new_user = models.User(
         email=user.email,
         role=user.role,
-        # TODO: Zmienić na prawdziwe haszowanie (np. passlib / bcrypt)
-        hashed_password=f"fake_hashed_{user.password}" 
+        hashed_password=password_context.hash(user.password),
     )
 
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return new_user
+
+
+# ----------------- AUTH -----------------
+@app.post("/login", response_model=schemas.TokenResponse)
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
+    user = db.query(models.User).filter(models.User.email == form_data.username).first()
+    if user is None or not password_context.verify(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Nieprawidłowy email lub hasło.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return {"access_token": create_access_token(user), "token_type": "bearer"}
 
 
 # ----------------- COURSES -----------------
@@ -52,21 +120,80 @@ def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db)):
     return new_course
 
 
+# ----------------- TASKS -----------------
+@app.get("/tasks/", response_model=list[schemas.TaskResponse])
+def get_tasks(db: Session = Depends(get_db)):
+    return db.query(models.Task).order_by(models.Task.id).all()
+
+
 # ----------------- SUBMISSIONS -----------------
-@app.post("/submissions/", response_model=schemas.TaskSubmissionResponse)
-def create_submission(sub: schemas.TaskSubmissionCreate, db: Session = Depends(get_db)):
-    # Tutaj w przyszłości będzie strzał do API Judge0 na serwerze!
-    # Na razie po prostu zapisujemy zgłoszenie w bazie (status = In Queue / Przetwarzanie)
-    
+@app.post(
+    "/submissions/",
+    response_model=schemas.TaskSubmissionResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def create_submission(
+    sub: schemas.TaskSubmissionCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    task = db.query(models.Task).filter(models.Task.id == sub.task_id).first()
+    if task is None:
+        raise HTTPException(status_code=404, detail="Nie znaleziono zadania.")
+
+    if not task.test_cases:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Zadanie nie ma przypadków testowych.",
+        )
+
     new_submission = models.TaskSubmission(
-        user_id=sub.user_id,
+        user_id=current_user.id,
         task_id=sub.task_id,
         source_code=sub.source_code,
         language_id=sub.language_id,
-        status_id=1, # 1 = In Queue (oczekuje na Judge0)
-        attempt_number=1 # TODO: logika sprawdzająca numer próby w historii
+        status_id=1,
+        total_tests=len(task.test_cases),
+        attempt_number=1,
     )
     db.add(new_submission)
+    db.flush()
+
+    test_cases = [
+        {
+            "stdin": test_case.input_data,
+            "expected_output": test_case.expected_output,
+            "cpu_time_limit": task.time_limit,
+            "memory_limit": task.memory_limit,
+        }
+        for test_case in task.test_cases
+    ]
+    try:
+        judge0_submissions = enqueue_batch(
+            source_code=sub.source_code,
+            language_id=sub.language_id,
+            test_cases=test_cases,
+        )
+    except Judge0Error as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
+
+    new_submission.judge0_token = judge0_submissions[0].token
+    db.add_all(
+        models.SubmissionTestResult(
+            submission_id=new_submission.id,
+            test_case_id=test_case.id,
+            judge0_token=judge0_submission.token,
+            status_id=judge0_submission.status_id or 1,
+        )
+        for test_case, judge0_submission in zip(
+            task.test_cases,
+            judge0_submissions,
+        )
+    )
     db.commit()
     db.refresh(new_submission)
     
