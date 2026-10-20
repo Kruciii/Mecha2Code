@@ -103,11 +103,11 @@ chmod +x deploy_front.sh
 ```
 
 Skrypt kopiuje `front/index.html`, `front/styles.css` oraz `front/app.js`
-do `/www`. Jeśli katalog docelowy ma inną lokalizację, można ją przekazać
+do `/var/www/mechacode-front`. Jeśli katalog docelowy ma inną lokalizację, można ją przekazać
 przez zmienną:
 
 ```bash
-WEB_ROOT=/var/www/mechacode ./deploy_front.sh
+WEB_ROOT=/www ./deploy_front.sh
 ```
 
 Skrypt używa `sudo` do utworzenia katalogu i instalacji plików z prawami

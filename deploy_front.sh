@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 PROJECT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 FRONT_DIR="${PROJECT_DIR}/front"
-WEB_ROOT="${WEB_ROOT:-/www}"
+WEB_ROOT="${WEB_ROOT:-/var/www/mechacode-front}"
 
 required_files=("index.html" "styles.css" "app.js")
 
