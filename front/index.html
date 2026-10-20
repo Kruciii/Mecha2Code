@@ -32,12 +32,17 @@
             <div class="examples"><h2>Przykład</h2><pre id="task-example">Wejście:  wybierz zadanie
 Wyjście: rozwiązanie</pre></div>
             <div class="constraints"><h2>Ograniczenia</h2><ul><li>Kod zostanie wysłany do sprawdzenia.</li><li>Limit czasu i pamięci znajdziesz powyżej.</li></ul></div>
+            <div class="result-panel">
+              <div class="result-heading"><h2>Wynik sprawdzania</h2><span id="result-status" class="result-status error">Brak zgłoszenia</span></div>
+              <div id="result-summary" class="result-summary">Wyślij rozwiązanie, aby zobaczyć wynik.</div>
+              <div id="test-results" class="test-results"></div>
+            </div>
           </div>
         </section>
         <section class="editor-panel">
           <div class="editor-toolbar"><select id="language"><option value="54">C++ (GCC 9.2.0)</option><option value="71">Python (3.8.1)</option><option value="62">Java (JDK 13.0.1)</option></select><button id="reset-code" class="toolbar-button">Resetuj</button></div>
           <div id="source-code" aria-label="Edytor kodu"></div>
-          <div class="editor-footer"><span>⌘ Enter, aby wysłać</span><div><button id="run-button" class="btn btn-outline-light">Uruchom</button><button id="submit-button" class="btn btn-success">Wyślij rozwiązanie</button></div></div>
+          <div class="editor-footer"><span>⌘ Enter, aby wysłać</span><button id="submit-button" class="btn btn-success">Wyślij rozwiązanie</button></div>
         </section>
       </div>
     </main>

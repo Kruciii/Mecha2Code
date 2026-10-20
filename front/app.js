@@ -16,6 +16,21 @@ const showAlert = (message, type = "success") => {
   const alert = $("#alert"); alert.textContent = message; alert.className = `alert alert-${type}`;
   window.setTimeout(() => alert.classList.add("d-none"), 4500);
 };
+const renderSubmissionResult = (submission) => {
+  const status = $("#result-status");
+  const summary = $("#result-summary");
+  const tests = $("#test-results");
+  const pending = [1, 2].includes(submission.status_id);
+  status.className = `result-status ${pending ? "pending" : submission.status_id === 3 ? "accepted" : "failed"}`;
+  status.textContent = pending ? "Sprawdzanie..." : submission.status_id === 3 ? "Accepted" : "Niepoprawne";
+  summary.textContent = pending
+    ? `Sprawdzono ${submission.test_results?.filter((test) => ![1, 2].includes(test.status_id)).length || 0}/${submission.total_tests} testów`
+    : `${submission.score ?? 0}% (${submission.passed_tests}/${submission.total_tests} testów)`;
+  tests.innerHTML = (submission.test_results || []).map((test, index) => {
+    const testClass = [1, 2].includes(test.status_id) ? "pending" : test.passed ? "passed" : "failed";
+    return `<span class="test-dot ${testClass}" title="Test ${index + 1}">${test.passed ? "✓" : [1, 2].includes(test.status_id) ? "…" : "×"}</span>`;
+  }).join("");
+};
 const request = async (path, options = {}) => {
   const headers = { "Content-Type":"application/json", ...(options.headers || {}) };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
@@ -60,6 +75,7 @@ const submit = async () => {
   try {
     if (!editor) return showAlert("Edytor kodu jeszcze się ładuje.", "warning");
     const submission = await request("/submissions/", { method:"POST", body:JSON.stringify({ task_id:selectedTask.id, language_id:Number($("#language").value), source_code:editor.getValue() }) });
+    renderSubmissionResult(submission);
     showAlert("Rozwiązanie jest sprawdzane...");
     pollSubmission(submission.id);
   } catch (error) { showAlert(error.message, "danger"); }
@@ -68,6 +84,7 @@ const pollSubmission = async (submissionId, attempt = 0) => {
   if (attempt >= 30) return showAlert("Sprawdzanie trwa zbyt długo. Sprawdź historię później.", "warning");
   try {
     const submission = await request(`/submissions/${submissionId}`);
+    renderSubmissionResult(submission);
     if ([1, 2].includes(submission.status_id)) {
       window.setTimeout(() => pollSubmission(submissionId, attempt + 1), 1500);
       return;
@@ -94,7 +111,6 @@ $("#logout-button").addEventListener("click", () => {
 });
 if (accessToken) { $("#login-form").classList.add("d-none"); $("#logout-button").classList.remove("d-none"); }
 $("#submit-button").addEventListener("click", submit);
-$("#run-button").addEventListener("click", () => showAlert("Uruchamianie kodu będzie dostępne po podłączeniu Judge0.", "info"));
 $("#refresh-button").addEventListener("click", loadTasks);
 $("#reset-code").addEventListener("click", () => { if (editor) editor.setValue(defaultCode); });
 $("#language").addEventListener("change", () => {
