@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
 
@@ -43,6 +43,17 @@ class TaskResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class TaskProgressResponse(BaseModel):
+    task_id: int
+    submission_id: int
+    status_id: Optional[int]
+    score: Optional[float] = None
+    total_tests: int = 0
+    passed_tests: int = 0
+    error_count: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
 # ================= TASK SUBMISSION =================
 class TaskSubmissionCreate(BaseModel):
     task_id: int
@@ -75,6 +86,6 @@ class TaskSubmissionResponse(BaseModel):
     error_count: int = 0
     created_at: datetime
     is_abandoned: bool
-    test_results: list[SubmissionTestResultResponse] = []
+    test_results: list[SubmissionTestResultResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)

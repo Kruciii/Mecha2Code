@@ -226,6 +226,42 @@ def get_tasks(db: Session = Depends(get_db)):
     return db.query(models.Task).order_by(models.Task.id).all()
 
 
+@app.get(
+    "/tasks/progress/",
+    response_model=list[schemas.TaskProgressResponse],
+)
+def get_task_progress(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    submissions = (
+        db.query(models.TaskSubmission)
+        .filter(models.TaskSubmission.user_id == current_user.id)
+        .order_by(
+            models.TaskSubmission.task_id,
+            models.TaskSubmission.created_at.desc(),
+            models.TaskSubmission.id.desc(),
+        )
+        .all()
+    )
+    latest_by_task = {}
+    for submission in submissions:
+        latest_by_task.setdefault(submission.task_id, submission)
+
+    return [
+        schemas.TaskProgressResponse(
+            task_id=submission.task_id,
+            submission_id=submission.id,
+            status_id=submission.status_id,
+            score=submission.score,
+            total_tests=submission.total_tests,
+            passed_tests=submission.passed_tests,
+            error_count=submission.error_count,
+        )
+        for submission in latest_by_task.values()
+    ]
+
+
 # ----------------- SUBMISSIONS -----------------
 @app.post(
     "/submissions/",
