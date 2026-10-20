@@ -125,5 +125,15 @@ chmod +x deploy_all.sh deploy_front.sh
 ./deploy_all.sh
 ```
 
+Repozytorium Git powinno znajdować się w `~/mechacode/Mecha2Code` (albo
+w katalogu `~/mechacode`). Jeśli projekt nie został jeszcze sklonowany:
+
+```bash
+cd ~/mechacode
+git clone <URL_REPOZYTORIUM> Mecha2Code
+cd Mecha2Code
+./deploy_all.sh
+```
+
 Skrypt używa `docker compose up -d --force-recreate`, ale nie wykonuje
 `docker compose down`, więc nie usuwa ani nie odłącza volume'ów baz danych.
