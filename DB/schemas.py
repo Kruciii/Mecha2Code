@@ -49,6 +49,20 @@ class TaskSubmissionCreate(BaseModel):
     source_code: str
     language_id: int = 54 # Domyślnie C++ (GCC 9.2.0)
 
+class SubmissionTestResultResponse(BaseModel):
+    id: int
+    test_case_id: int
+    judge0_token: str
+    status_id: Optional[int]
+    stdout: Optional[str] = None
+    stderr: Optional[str] = None
+    compile_output: Optional[str] = None
+    execution_time: Optional[float] = None
+    memory_used: Optional[int] = None
+    passed: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
 class TaskSubmissionResponse(BaseModel):
     id: int
     user_id: int
@@ -61,5 +75,6 @@ class TaskSubmissionResponse(BaseModel):
     error_count: int = 0
     created_at: datetime
     is_abandoned: bool
+    test_results: list[SubmissionTestResultResponse] = []
 
     model_config = ConfigDict(from_attributes=True)

@@ -23,7 +23,8 @@ class Judge0BatchSubmission:
 def _request_json(
     *,
     endpoint: str,
-    payload: dict,
+    payload: dict | None = None,
+    method: str = "POST",
 ) -> object:
     headers = {"Content-Type": "application/json"}
     api_key = os.getenv("JUDGE0_API_KEY")
@@ -32,9 +33,9 @@ def _request_json(
 
     http_request = request.Request(
         endpoint,
-        data=json.dumps(payload).encode("utf-8"),
+        data=json.dumps(payload).encode("utf-8") if payload is not None else None,
         headers=headers,
-        method="POST",
+        method=method,
     )
     try:
         with request.urlopen(http_request, timeout=10) as response:
@@ -46,6 +47,26 @@ def _request_json(
         ) from exc
     except (error.URLError, TimeoutError, json.JSONDecodeError) as exc:
         raise Judge0Error(f"Nie udało się połączyć z Judge0: {exc}") from exc
+
+
+def get_batch_results(tokens: list[str]) -> list[dict]:
+    judge0_url = os.getenv("JUDGE0_URL")
+    if not judge0_url:
+        raise Judge0Error("Brak zmiennej JUDGE0_URL w pliku .env.")
+    if not tokens:
+        return []
+
+    endpoint = (
+        f"{judge0_url.rstrip('/')}/submissions/batch"
+        f"?tokens={','.join(tokens)}"
+        "&base64_encoded=false"
+    )
+    response_data = _request_json(endpoint=endpoint, method="GET")
+    if isinstance(response_data, dict):
+        response_data = response_data.get("submissions")
+    if not isinstance(response_data, list):
+        raise Judge0Error("Judge0 zwrócił nieprawidłowe wyniki batcha.")
+    return [item for item in response_data if isinstance(item, dict)]
 
 
 def enqueue_batch(

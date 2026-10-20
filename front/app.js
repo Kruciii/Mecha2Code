@@ -30,9 +30,22 @@ const loadTasks = async () => { try { tasks = await request("/tasks/"); renderTa
 const submit = async () => {
   if (!selectedTask) return showAlert("Najpierw wybierz zadanie.", "warning");
   try {
-    await request("/submissions/", { method:"POST", body:JSON.stringify({ task_id:selectedTask.id, language_id:Number($("#language").value), source_code:$("#source-code").value }) });
-    showAlert("Rozwiązanie dodane do kolejki sprawdzania.");
+    const submission = await request("/submissions/", { method:"POST", body:JSON.stringify({ task_id:selectedTask.id, language_id:Number($("#language").value), source_code:$("#source-code").value }) });
+    showAlert("Rozwiązanie jest sprawdzane...");
+    pollSubmission(submission.id);
   } catch (error) { showAlert(error.message, "danger"); }
+};
+const pollSubmission = async (submissionId, attempt = 0) => {
+  if (attempt >= 30) return showAlert("Sprawdzanie trwa zbyt długo. Sprawdź historię później.", "warning");
+  try {
+    const submission = await request(`/submissions/${submissionId}`);
+    if ([1, 2].includes(submission.status_id)) {
+      window.setTimeout(() => pollSubmission(submissionId, attempt + 1), 1500);
+      return;
+    }
+    const message = `${submission.score}% (${submission.passed_tests}/${submission.total_tests} testów)`;
+    showAlert(submission.status_id === 3 ? `Accepted: ${message}` : `Niepoprawne rozwiązanie: ${message}`, submission.status_id === 3 ? "success" : "danger");
+  } catch (error) { showAlert(`Nie udało się pobrać wyniku: ${error.message}`, "danger"); }
 };
 $("#login-form").addEventListener("submit", async (event) => {
   event.preventDefault();
