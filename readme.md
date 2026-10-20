@@ -112,3 +112,18 @@ WEB_ROOT=/www ./deploy_front.sh
 
 Skrypt używa `sudo` do utworzenia katalogu i instalacji plików z prawami
 `0644`.
+
+## Pełne wdrożenie na Azure
+
+Skrypt `deploy_all.sh` pobiera najnowszy kod, przebudowuje obraz API bez
+cache, odtwarza wszystkie usługi Docker Compose oraz kopiuje frontend do
+`/var/www/mechacode-front`:
+
+```bash
+cd ~/mechacode/Mecha2Code
+chmod +x deploy_all.sh deploy_front.sh
+./deploy_all.sh
+```
+
+Skrypt używa `docker compose up -d --force-recreate`, ale nie wykonuje
+`docker compose down`, więc nie usuwa ani nie odłącza volume'ów baz danych.
