@@ -36,18 +36,13 @@ Wyjście: rozwiązanie</pre></div>
         </section>
         <section class="editor-panel">
           <div class="editor-toolbar"><select id="language"><option value="54">C++ (GCC 9.2.0)</option><option value="71">Python (3.8.1)</option><option value="62">Java (JDK 13.0.1)</option></select><button id="reset-code" class="toolbar-button">Resetuj</button></div>
-          <textarea id="source-code" spellcheck="false">#include &lt;iostream&gt;
-using namespace std;
-
-int main() {
-    // Napisz swoje rozwiązanie tutaj
-    return 0;
-}</textarea>
+          <div id="source-code" aria-label="Edytor kodu"></div>
           <div class="editor-footer"><span>⌘ Enter, aby wysłać</span><div><button id="run-button" class="btn btn-outline-light">Uruchom</button><button id="submit-button" class="btn btn-success">Wyślij rozwiązanie</button></div></div>
         </section>
       </div>
     </main>
   </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,13 +1,15 @@
 import os
+import logging
+import time
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import BackgroundTasks, FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from database import get_db, engine
+from database import SessionLocal, get_db, engine
 import models
 import schemas
 from judge0_client import Judge0Error, enqueue_batch, get_batch_results
@@ -16,6 +18,7 @@ from judge0_client import Judge0Error, enqueue_batch, get_batch_results
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="MechaCode API")
+logger = logging.getLogger(__name__)
 
 app.add_middleware(
     CORSMiddleware,
@@ -60,6 +63,85 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+def process_submission(submission_id: int) -> None:
+    """Poll Judge0 in the API background task and persist the final result."""
+    db = SessionLocal()
+    try:
+        submission = db.query(models.TaskSubmission).filter(
+            models.TaskSubmission.id == submission_id
+        ).first()
+        if submission is None:
+            logger.error("Nie znaleziono zgłoszenia %s dla workera.", submission_id)
+            return
+
+        max_attempts = int(os.getenv("JUDGE0_MAX_POLL_ATTEMPTS", "40"))
+        poll_interval = float(os.getenv("JUDGE0_POLL_INTERVAL_SECONDS", "1.5"))
+        tokens = [result.judge0_token for result in submission.test_results]
+
+        for _ in range(max_attempts):
+            judge_results = get_batch_results(tokens)
+            results_by_token = {
+                result.get("token"): result
+                for result in judge_results
+                if result.get("token")
+            }
+            for result in submission.test_results:
+                judge_result = results_by_token.get(result.judge0_token)
+                if judge_result is None:
+                    continue
+                status_data = judge_result.get("status") or {}
+                result.status_id = status_data.get("id")
+                result.stdout = judge_result.get("stdout")
+                result.stderr = judge_result.get("stderr")
+                result.compile_output = judge_result.get("compile_output")
+                result.execution_time = judge_result.get("time")
+                result.memory_used = judge_result.get("memory")
+                result.passed = result.status_id == 3
+
+            if all(result.status_id not in (None, 1, 2) for result in submission.test_results):
+                submission.passed_tests = sum(
+                    result.passed for result in submission.test_results
+                )
+                submission.total_tests = len(submission.test_results)
+                submission.score = round(
+                    submission.passed_tests / submission.total_tests * 100,
+                    2,
+                )
+                submission.status_id = (
+                    3
+                    if submission.passed_tests == submission.total_tests
+                    else next(
+                        result.status_id
+                        for result in submission.test_results
+                        if not result.passed
+                    )
+                )
+                submission.error_count = sum(
+                    1
+                    for result in submission.test_results
+                    if result.stderr or result.compile_output
+                )
+                db.commit()
+                return
+
+            db.commit()
+            time.sleep(poll_interval)
+
+        logger.error(
+            "Przekroczono czas oczekiwania na Judge0 dla zgłoszenia %s.",
+            submission_id,
+        )
+    except (Judge0Error, ValueError) as exc:
+        db.rollback()
+        logger.exception(
+            "Nie udało się pobrać wyniku Judge0 dla zgłoszenia %s: %s",
+            submission_id,
+            exc,
+        )
+    finally:
+        db.close()
 
 
 # ----------------- USERS -----------------
@@ -134,6 +216,7 @@ def get_tasks(db: Session = Depends(get_db)):
 )
 def create_submission(
     sub: schemas.TaskSubmissionCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -196,6 +279,7 @@ def create_submission(
     )
     db.commit()
     db.refresh(new_submission)
+    background_tasks.add_task(process_submission, new_submission.id)
     
     return new_submission
 
@@ -220,66 +304,4 @@ def get_submission(
     if submission is None:
         raise HTTPException(status_code=404, detail="Nie znaleziono zgłoszenia.")
 
-    pending_results = [
-        result for result in submission.test_results
-        if result.status_id in (None, 1, 2)
-    ]
-    if pending_results:
-        try:
-            judge_results = get_batch_results(
-                [result.judge0_token for result in pending_results]
-            )
-        except Judge0Error as exc:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=str(exc),
-            ) from exc
-
-        results_by_token = {
-            result.get("token"): result
-            for result in judge_results
-            if result.get("token")
-        }
-        for result in pending_results:
-            judge_result = results_by_token.get(result.judge0_token)
-            if judge_result is None:
-                continue
-            status_data = judge_result.get("status") or {}
-            result.status_id = status_data.get("id")
-            result.stdout = judge_result.get("stdout")
-            result.stderr = judge_result.get("stderr")
-            result.compile_output = judge_result.get("compile_output")
-            result.execution_time = judge_result.get("time")
-            result.memory_used = judge_result.get("memory")
-            result.passed = result.status_id == 3
-
-    if submission.test_results and all(
-        result.status_id not in (None, 1, 2)
-        for result in submission.test_results
-    ):
-        submission.passed_tests = sum(
-            result.passed for result in submission.test_results
-        )
-        submission.total_tests = len(submission.test_results)
-        submission.score = round(
-            submission.passed_tests / submission.total_tests * 100,
-            2,
-        )
-        submission.status_id = (
-            3
-            if submission.passed_tests == submission.total_tests
-            else next(
-                result.status_id
-                for result in submission.test_results
-                if not result.passed
-            )
-        )
-        submission.error_count = sum(
-            1
-            for result in submission.test_results
-            if result.stderr or result.compile_output
-        )
-
-    db.commit()
-    db.refresh(submission)
     return submission

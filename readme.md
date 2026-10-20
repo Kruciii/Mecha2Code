@@ -92,3 +92,23 @@ erDiagram
 Judge0 wykonuje każdy przypadek testowy osobno, dlatego jeden submission może
 mieć wiele rekordów `SUBMISSION_TEST_RESULT`. Każdy z nich przechowuje osobny
 token Judge0 oraz wynik konkretnego testu.
+
+## Wdrażanie frontendu na Azure
+
+Na serwerze Azure, w katalogu projektu, uruchom:
+
+```bash
+chmod +x deploy_front.sh
+./deploy_front.sh
+```
+
+Skrypt kopiuje `front/index.html`, `front/styles.css` oraz `front/app.js`
+do `/www`. Jeśli katalog docelowy ma inną lokalizację, można ją przekazać
+przez zmienną:
+
+```bash
+WEB_ROOT=/var/www/mechacode ./deploy_front.sh
+```
+
+Skrypt używa `sudo` do utworzenia katalogu i instalacji plików z prawami
+`0644`.

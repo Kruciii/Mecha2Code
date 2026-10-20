@@ -2,6 +2,14 @@ const API_URL = "http://localhost:8000";
 let accessToken = localStorage.getItem("mechacode_access_token");
 let tasks = [];
 let selectedTask = null;
+let editor = null;
+const defaultCode = `#include <iostream>
+using namespace std;
+
+int main() {
+    // Napisz swoje rozwiązanie tutaj
+    return 0;
+}`;
 const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;" }[character]));
 const showAlert = (message, type = "success") => {
@@ -14,6 +22,26 @@ const request = async (path, options = {}) => {
   const response = await fetch(`${API_URL}${path}`, { ...options, headers });
   if (!response.ok) { let detail = `Błąd API (${response.status})`; try { detail = (await response.json()).detail || detail; } catch (_) {} throw new Error(detail); }
   return response.json();
+};
+const languageFromValue = () => ({ "54":"cpp", "71":"python", "62":"java" })[$("#language").value] || "cpp";
+const createEditor = () => {
+  require.config({ paths: { vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs" } });
+  require(["vs/editor/editor.main"], () => {
+    editor = monaco.editor.create($("#source-code"), {
+      value: defaultCode,
+      language: languageFromValue(),
+      theme: "vs-dark",
+      automaticLayout: true,
+      minimap: { enabled: true },
+      fontSize: 14,
+      fontFamily: "Consolas, Monaco, monospace",
+      scrollBeyondLastLine: false,
+      tabSize: 4,
+      wordWrap: "on",
+      padding: { top: 14, bottom: 14 },
+    });
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, submit);
+  });
 };
 const selectTask = (task) => {
   selectedTask = task; $("#task-title").textContent = task.title; $("#task-description").innerHTML = `<p>${escapeHtml(task.description)}</p>`;
@@ -30,7 +58,8 @@ const loadTasks = async () => { try { tasks = await request("/tasks/"); renderTa
 const submit = async () => {
   if (!selectedTask) return showAlert("Najpierw wybierz zadanie.", "warning");
   try {
-    const submission = await request("/submissions/", { method:"POST", body:JSON.stringify({ task_id:selectedTask.id, language_id:Number($("#language").value), source_code:$("#source-code").value }) });
+    if (!editor) return showAlert("Edytor kodu jeszcze się ładuje.", "warning");
+    const submission = await request("/submissions/", { method:"POST", body:JSON.stringify({ task_id:selectedTask.id, language_id:Number($("#language").value), source_code:editor.getValue() }) });
     showAlert("Rozwiązanie jest sprawdzane...");
     pollSubmission(submission.id);
   } catch (error) { showAlert(error.message, "danger"); }
@@ -67,7 +96,13 @@ if (accessToken) { $("#login-form").classList.add("d-none"); $("#logout-button")
 $("#submit-button").addEventListener("click", submit);
 $("#run-button").addEventListener("click", () => showAlert("Uruchamianie kodu będzie dostępne po podłączeniu Judge0.", "info"));
 $("#refresh-button").addEventListener("click", loadTasks);
-$("#reset-code").addEventListener("click", () => { $("#source-code").value = "// Napisz swoje rozwiązanie tutaj\n"; });
-$("#theme-button").addEventListener("click", () => document.body.classList.toggle("light-editor"));
-$("#source-code").addEventListener("keydown", (event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") submit(); });
+$("#reset-code").addEventListener("click", () => { if (editor) editor.setValue(defaultCode); });
+$("#language").addEventListener("change", () => {
+  if (editor) monaco.editor.setModelLanguage(editor.getModel(), languageFromValue());
+});
+$("#theme-button").addEventListener("click", () => {
+  document.body.classList.toggle("light-editor");
+  if (editor) monaco.editor.setTheme(document.body.classList.contains("light-editor") ? "vs" : "vs-dark");
+});
+createEditor();
 loadTasks();

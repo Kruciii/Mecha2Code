@@ -20,6 +20,8 @@ services:
       DATABASE_URL: "postgresql+psycopg2://${MECHACODE_DB_USER}:${MECHACODE_DB_PASSWORD}@mechacode-db:5432/${MECHACODE_DB_NAME}"
       JUDGE0_URL: "http://judge0-server:2358"
       JUDGE0_BATCH_SIZE: "20"
+      JUDGE0_POLL_INTERVAL_SECONDS: "1.5"
+      JUDGE0_MAX_POLL_ATTEMPTS: "40"
       JWT_SECRET_KEY: "${JWT_SECRET_KEY}"
     ports:
       - "127.0.0.1:8000:8000"
