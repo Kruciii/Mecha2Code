@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8000";
+const API_URL = "http://9.160.9.128"; //lokalnie http://localhost:8000
 let accessToken = localStorage.getItem("mechacode_access_token");
 let tasks = [];
 let selectedTask = null;
