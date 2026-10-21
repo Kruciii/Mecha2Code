@@ -1,0 +1,325 @@
+[
+"_comment1": "SPRAWDZIAN 1" 
+
+  {
+    "id": 1,
+    "module_id": 1,
+    "title": "Średnia liczb dwucyfrowych",
+    "description": "Napisz program, który wczytuje liczby całkowite aż do wczytania liczby podzielnej przez M (M – stała) i zarazem większej od obu swoich bezpośrednich poprzedników. Program powinien obliczyć i wypisać średnią arytmetyczną wszystkich wczytanych liczb dwucyfrowych. Zadanie należy rozwiązać bez użycia tablic.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 2,
+    "module_id": 1,
+    "title": "Liczby parzyste i trójki podzielne przez D",
+    "description": "Napisz program, który wczytuje kolejno liczby całkowite aż do powtórnego wczytania liczby równej pierwszej lub drugiej wczytanej liczbie. Program powinien wypisać informację, ile wczytano liczb parzystych oraz ile razy wczytano po sobie trzy liczby podzielne przez stałą D. Zadanie należy rozwiązać bez użycia tablic.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 3,
+    "module_id": 1,
+    "title": "Najmniejsza liczba podzielna przez D",
+    "description": "Napisz program, który wczytuje liczby całkowite aż do wczytania liczby nieparzystej i zarazem mniejszej od obu swoich bezpośrednich poprzedników. Program powinien wypisać najmniejszą ze wszystkich wczytanych liczb podzielnych przez stałą D lub informację, że taka liczba nie wystąpiła. Zadanie należy rozwiązać bez użycia tablic.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 4,
+    "module_id": 1,
+    "title": "Porównanie liczby małych i dużych liter",
+    "description": "Napisz program, który wczytuje ciąg znaków aż do napotkania kolejno dwóch jednakowych znaków równych pierwszemu wczytanemu znakowi. Program powinien wypisać informację, czego wczytano więcej: małych liter czy dużych liter (nie uwzględniając dwóch ostatnich kończących znaków). Zadanie należy rozwiązać bez użycia tablic.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 5,
+    "module_id": 1,
+    "title": "Ciąg naprzemienny – znaki liczb",
+    "description": "Napisz program, który wczytuje liczby całkowite tak długo, póki są one na przemian dodatnie i ujemne. Program powinien wypisać procentowy udział liczb parzystych oraz procentowy udział liczb jednocyfrowych w całym wczytanym ciągu. Zadanie należy rozwiązać bez użycia tablic.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 6,
+    "module_id": 1,
+    "title": "Zliczanie wzorców w ciągu znaków",
+    "description": "Napisz program, który wczytuje liczbę całkowitą n, wymuszając, by była to liczba jednocyfrowa dodatnia (1–9), a następnie wczytuje n znaków. Program powinien wypisać, ile razy w tym ciągu znaków wystąpiła para nawiasów kwadratowych [] oraz ile razy po kolei za sobą wystąpiły trzy znaki określone stałą X. Zadanie należy rozwiązać bez użycia tablic.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 7,
+    "module_id": 1,
+    "title": "Porównanie napisów wg pierwszej litery",
+    "description": "Napisz program, który wczytuje liczbę całkowitą n, wymuszając, by była większa od stałej G, a następnie wczytuje n napisów. Następnie program wczytuje ciąg napisów aż do napotkania napisu równego bezpośrednio poprzednio wczytanemu napisowi. Program powinien wypisać informację, których napisów było więcej: zaczynających się od małej litery czy od dużej litery. Zadanie należy rozwiązać bez użycia tablic.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 8,
+    "module_id": 1,
+    "title": "Najmniejsza liczba parzysta przed warunkiem stopu",
+    "description": "Napisz program, który wczytuje liczby całkowite aż do wczytania liczby podzielnej przez P (P – stała) i zarazem większej od obu swoich bezpośrednich poprzedników. Program powinien wypisać najmniejszą ze wszystkich wczytanych liczb parzystych lub informację, że taka liczba nie wystąpiła. Zadanie należy rozwiązać bez użycia tablic.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 9,
+    "module_id": 1,
+    "title": "Odwrócenie początkowej trójki i warunek parzystości",
+    "description": "Napisz program, który wczytuje od użytkownika liczbę k, a następnie wczytuje liczby całkowite tak długo, aż po sobie powtórzą się trzy pierwsze wczytane liczby w odwrotnej kolejności (np. dla 1, 2, 3 sekwencją kończącą jest 3, 2, 1) oraz wczytane zostanie co najmniej k liczb podzielnych przez 2. Program powinien wyświetlić sumę ujemnych liczb z tego ciągu. Zadanie należy rozwiązać bez użycia tablic.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 10,
+    "module_id": 1,
+    "title": "Ciąg naprzemienny – parzystość",
+    "description": "Napisz program, który wczytuje liczby całkowite tak długo, póki są one na przemian parzyste i nieparzyste. Program powinien wypisać informację, których liczb w całym ciągu było więcej: dwucyfrowych czy dodatnich. Zadanie należy rozwiązać bez użycia tablic.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 11,
+    "module_id": 1,
+    "title": "Naprzemienna wielkość liter i zliczanie litery x",
+    "description": "Napisz program, który najpierw wczytuje znak x (wymuszając, by była to dowolna litera), a następnie wczytuje znaki tak długo, póki są to na przemian małe litery i duże litery (pierwszy znak może być dowolną literą). Program powinien wypisać informację, ile w tym ciągu było liter x. Zadanie należy rozwiązać bez użycia tablic.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  }
+]
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+[
+"_comment1": "SPRAWDZIAN 2" 
+  {
+    "id": 12,
+    "module_id": 2,
+    "title": "Cykliczne przesuwanie wierszy macierzy",
+    "description": "Wypełnij tablicę double a[N][N] (N – stała) liczbami losowymi: całkowitymi z przedziału [0, x] nad i na głównej przekątnej (wartość x wczytaj od użytkownika, wymuszając, aby była dwucyfrowa), a pod główną przekątną liczbami rzeczywistymi z przedziału [-9, 9]. Następnie przesuń cyklicznie o 1 miejsce w lewo każdy wiersz mający więcej elementów ujemnych niż nieujemnych i wypisz wynikową tablicę wierszami. Zadanie należy rozwiązać z wykorzystaniem procedur i funkcji.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 13,
+    "module_id": 2,
+    "title": "Wstawianie trójek i zamiana przekątnej z wierszem",
+    "description": "Wczytaj liczbę p, a następnie p trójek liczb całkowitych (i, j, q), wymuszając poprawne indeksy (i, j) mieszczące się w tablicy a[N][N] (N – stała). Wstaw wartość q pod indeks (i, j), a pozostałe pola tablicy uzupełnij jedynkami. Jeśli skrajne elementy pierwszego wiersza (a[0][0] i a[0][N-1]) mają ten sam znak, zamień miejscami główną przekątną z pierwszym wierszem. Na koniec wypisz tablicę wierszami. Zadanie należy rozwiązać z wykorzystaniem procedur i funkcji.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 14,
+    "module_id": 2,
+    "title": "Cykliczne przesuwanie kolumn znakowych w dół",
+    "description": "Wczytaj znaki do tablicy a[W][K] (W, K – stałe). Następnie każdą kolumnę zawierającą co najmniej X małych liter (X – stała) przesuwaj cyklicznie o 1 pozycję w dół tak długo, aż jej ostatni element stanie się cyfrą (lub do wykonania pełnego obrotu, jeśli cyfry brak). Wydrukuj zmodyfikowaną tablicę wierszami. Zadanie należy rozwiązać z wykorzystaniem procedur i funkcji.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 15,
+    "module_id": 2,
+    "title": "Zliczanie kolumnowe napisów z wielkich liter",
+    "description": "Wczytaj napisy do tablicy a[W][K] (W, K – stałe), wymuszając, aby każdy napis miał długość co najwyżej N znaków (dłuższe odrzucaj). Następnie utwórz tablicę jednowymiarową zliczającą dla każdej kolumny liczbę napisów złożonych wyłącznie z wielkich liter. Na koniec wypisz tablicę dwuwymiarową oraz utworzoną tablicę wynikową. Zadanie należy rozwiązać z wykorzystaniem procedur i funkcji.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 16,
+    "module_id": 2,
+    "title": "Wymiana maksimów w macierzy kwadratowej",
+    "description": "Wypełnij obwód tablicy a[N][N] losowymi liczbami całkowitymi z zakresu [-A, A] (A – stała), a jej wnętrze losowymi liczbami całkowitymi z zakresu [B, C] (B, C – stałe). Znajdź wartość maksymalną pod główną przekątną oraz wartość maksymalną w M ostatnich wierszach tablicy (M – stała). Zamień znalezione maksima miejscami i wypisz tablicę wierszami. Zadanie należy rozwiązać z wykorzystaniem procedur i funkcji.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 17,
+    "module_id": 2,
+    "title": "Wypełnianie obwodu ciągiem arytmetycznym i sumy wierszy",
+    "description": "Wypełnij obwód tablicy a[N][N] (N – stała) liczbami ciągu arytmetycznego 1, 4, 7, ... (krok 3), idąc zgodnie z ruchem wskazówek zegara od lewego górnego rogu. Wnętrze tablicy uzupełnij liczbami całkowitymi wczytanymi od użytkownika. Następnie dla każdego wiersza oblicz sumę elementów znajdujących się nad główną przekątną i wpisz ją na element głównej przekątnej tego wiersza. Wypisz wynikową tablicę wierszami. Zadanie należy rozwiązać z wykorzystaniem procedur i funkcji.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 18,
+    "module_id": 2,
+    "title": "Obrót obwodu macierzy o 90 stopni",
+    "description": "Wczytaj do tablicy a[N][N] (N – stała) liczby całkowite, wymuszając, by każda wprowadzana wartość była podzielna przez stałą P. Następnie obróć elementy leżące na obwodzie tablicy o 90 stopni zgodnie ze wskazówkami zegara, pozostawiając wnętrze bez zmian. Wypisz zmodyfikowaną tablicę wierszami. Zadanie należy rozwiązać z wykorzystaniem procedur i funkcji.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  }
+]
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+[
+"_comment1": "SPRAWDZIAN 3" 
+  {
+    "id": 19,
+    "module_id": 3,
+    "title": "Dynamiczna tablica rekordów z pliku we.txt",
+    "description": "Utwórz dynamiczną tablicę rekordów A o rozmiarze N (pobranym od użytkownika) o polach (znak, liczba rzeczywista) i wczytaj do niej dane z pliku „we.txt” (brakujące pola uzupełnij losowymi dużymi literami i liczbami z przedziału [-20, 20]). Wypisz tablicę z dokładnością do dwóch miejsc po przecinku. Znajdź element o największym polu liczbowym wśród ostatnich 3 elementów i zastąp tą wartością pola liczbowe wszystkich elementów poprzedzających, a ich pola znakowe zastąp wylosowaną małą literą. Wypisz tablicę ponownie i zapisz ją wierszami do pliku wskazanego przez użytkownika. Zwolnij pamięć po tablicy dynamicznej. Zadanie napisz z użyciem procedur i funkcji.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 20,
+    "module_id": 3,
+    "title": "Dwuwymiarowa tablica rekordów i ekstrakcja znaków",
+    "description": "Wypełnij obwód tablicy rekordów A[N][N] (N – stała, pola typu int, char) danymi z pliku o nazwie podanej przez użytkownika, a wewnątrz liczbami losowymi jednocyfrowymi i małymi literami. Wypisz tablicę A wierszami. Zlicz, ile jest elementów z liczbą parzystą nad główną przekątną, a następnie przepisz znaki z tych pól do dynamicznej tablicy znaków B o odpowiednim rozmiarze. Wypisz tablicę B i zapisz ją do pliku „wynik.txt”. Pamiętaj o zwolnieniu pamięci. Zadanie napisz z użyciem procedur i funkcji.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 21,
+    "module_id": 3,
+    "title": "Zamiana wylosowanych elementów rekordu i prefiks pliku",
+    "description": "Utwórz dynamiczną tablicę rekordów A o rozmiarze N (od użytkownika) o polach (znak, liczba rzeczywista) i wczytaj do niej dane z pliku o nazwie podanej przez użytkownika (brakujące dane uzupełnij losowymi małymi literami i liczbami z przedziału [-P, P], gdzie P – stała). Wypisz tablicę A. Wylosuj dwa różne poprawne indeksy (i1, i2) i zamień miejscami te elementy. Wypisz tablicę A ponownie i zapisz ją wierszami do pliku o nazwie jak pliku wejściowego z prefiksem „wynik-”. Pamiętaj o zwolnieniu pamięci. Zadanie napisz z użyciem procedur i funkcji.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 22,
+    "module_id": 3,
+    "title": "Odwracanie podciągu rekordów od stałej C",
+    "description": "Wylosuj rozmiar N z zakresu [5, 10] i utwórz dynamiczną tablicę rekordów A o polach (liczba całkowita, znak). Wypełnij ją danymi z pliku o nazwie podanej przez użytkownika (brakujące dane uzupełnij losowymi liczbami całkowitymi z [D, G] oraz cyframi '0'-'9'). Wypisz tablicę A. W tablicy odwróć kolejność elementów w obszarze od pierwszego napotkanego elementu z liczbą równą stałej C do końca tablicy. Wypisz tablicę ponownie i zapisz ją do pliku „nowa.txt”. Pamiętaj o zwolnieniu pamięci. Zadanie napisz z użyciem procedur i funkcji.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 23,
+    "module_id": 3,
+    "title": "Generowanie macierzy z przedziałów rekordowych",
+    "description": "Wczytaj z pliku podanego przez użytkownika dane do dynamicznej tablicy rekordów T o rozmiarze N (N podane przez użytkownika, N >= M) o polach całkowitych (min, max). W razie braku wystarczających danych zakończ program komunikatem błędu. Wypisz tablicę T. Następnie każdy i-ty wiersz macierzy A[M][M] (M – stała) wypełnij losowymi liczbami z przedziału [T[i].min, T[i].max]. Wypisz macierz A wierszami. Zapisz do pliku „A.txt” te kolumny macierzy A, których suma elementów przekracza stałą K. Pamiętaj o zwolnieniu pamięci. Zadanie napisz z użyciem procedur i funkcji.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 24,
+    "module_id": 3,
+    "title": "Uśrednianie współrzędnych punktów 2D wierszami",
+    "description": "Wczytaj z pliku „punkty.txt” dane do tablicy rekordów T[W][K] reprezentujących współrzędne 2D (x, y – liczby rzeczywiste) i wypisz ją wierszami. Wylosuj liczbę N z zakresu [W/2, W] i zaalokuj dynamiczną tablicę rekordów T2 o rozmiarze N. W i-tym elemencie tablicy T2 wpisz średnie arytmetyczne odpowiednio ze współrzędnych x i y rekordów w i-tym wierszu tablicy T. Wypisz tablicę T2 na ekranie oraz zapisz ją do pliku „punkty_srednia.txt”. Pamiętaj o zwolnieniu pamięci. Zadanie napisz z użyciem procedur i funkcji.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  }
+]
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+[
+"_comment1": "SPRAWDZIAN 4" 
+  {
+    "id": 25,
+    "module_id": 4,
+    "title": "Lista jednokierunkowa – dopisanie maksimum i usunięcie k-tego elementu",
+    "description": "Napisz funkcję, która z listy jednokierunkowej liczb całkowitych dopisuje na końcu listy element zawierający największą wartość z listy, po czym usuwa element o zadanym numerze kolejnym (o ile istnieje) i zwraca informację logiczną, czy usunięcie nastąpiło. Użyj funkcji w pełnym programie wczytującym od użytkownika do listy jednokierunkowej liczby aż do wprowadzenia 0, wypisującym listę i zwalniającym zaalokowaną pamięć.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 26,
+    "module_id": 4,
+    "title": "Wstawienie nowego węzła jako przedostatniego elementu",
+    "description": "Napisz funkcję, która dla listy jednokierunkowej zawierającej pary (znak, liczba) wstawia nowy element z podanymi danymi jako przedostatni element listy i zwraca adres tego nowego elementu. Użyj funkcji w pełnym programie wczytującym od użytkownika do listy jednokierunkowej pary (znak, liczba), dopóki użytkownik nie poda pary '0', 0, wypisującym listę i zwalniającym pamięć.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 27,
+    "module_id": 4,
+    "title": "Dopisanie na koniec i usunięcie drugiego elementu listy osób",
+    "description": "Napisz funkcję, która do listy jednokierunkowej zawierającej rekordy osób (imię, nazwisko, wiek) dopisuje na końcu rekord z danymi wczytanymi od użytkownika, a następnie usuwa drugi element z listy i zwraca jego dane w postaci rekordu (jeśli lista nie ma wystarczającej liczby elementów, zwraca rekord o polach ?, ?, 0). Użyj funkcji w programie wczytującym do listy jednokierunkowej dane osób z pliku „dane.txt”, wypisz listę i zwolnij pamięć.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 28,
+    "module_id": 4,
+    "title": "Dopisanie średniej dodatnich na początek i usunięcie k-tego",
+    "description": "Napisz funkcję, która z listy jednokierunkowej liczb rzeczywistych dopisuje na początku listy element zawierający średnią arytmetyczną wszystkich dodatnich elementów listy (o ile takie są), po czym usuwa element o zadanym kolejnym numerze (o ile istnieje) i zwraca informację logiczną, czy usunięcie nastąpiło. Użyj funkcji w programie wczytującym liczby do listy aż do podania 0, wypisz listę i zwolnij pamięć.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 29,
+    "module_id": 4,
+    "title": "Warunkowe usunięcie drugiego i dopisanie autora na koniec",
+    "description": "Napisz funkcję, która z listy jednokierunkowej zawierającej rekordy o polach (imię, nazwisko) usuwa drugi element, jeśli lista zawiera co najmniej 3 osoby o zadanym w parametrze imieniu, po czym dopisuje na końcu listy element zawierający dane autora piszącego program i zwraca adres tego elementu. Użyj funkcji w programie wczytującym do listy dane osób z pliku „dane.txt”, zaprezentuj wynik i zwolnij pamięć.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 30,
+    "module_id": 4,
+    "title": "Usunięcie m elementów z początku i dopisanie dwóch na końcu",
+    "description": "Napisz funkcję, która z listy jednokierunkowej liczb usuwa z początku co najwyżej zadaną liczbę elementów i zwraca liczbę faktycznie usuniętych, a na końcu listy dopisuje dwa elementy o zadanych w parametrach wartościach. Użyj funkcji w programie wczytującym od użytkownika do listy jednokierunkowej liczby aż do podania liczby 0, wypisz listę i zwolnij pamięć.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 31,
+    "module_id": 4,
+    "title": "Przeniesienie głowy na koniec listy po warunku parzystości",
+    "description": "Napisz funkcję, która dla listy jednokierunkowej zawierającej liczby całkowite przenosi na koniec listy pierwszy element, gdy lista zawiera co najmniej zadaną w parametrze liczbę elementów parzystych. Użyj funkcji w programie wczytującym od użytkownika do listy jednokierunkowej liczby, dopóki użytkownik nie poda liczby 0, wypisz listę i zwolnij pamięć.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 32,
+    "module_id": 4,
+    "title": "Dopisanie na pozycję 2 przy samych małych literach",
+    "description": "Napisz funkcję, która dla listy jednokierunkowej zawierającej pary (znak, liczba) dopisuje jako drugi element węzeł o zadanych danych, gdy na liście znajdują się wyłącznie elementy zawierające małe litery w polu znakowym, po czym zwraca adres dopisanego elementu lub NULL, gdy niczego nie dopisano. Użyj funkcji w programie wczytującym od użytkownika pary (znak, liczba) aż do wprowadzenia '0', 0, wypisz listę i zwolnij pamięć.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 33,
+    "module_id": 4,
+    "title": "Wstawienie autora na początek i usunięcie osoby o imieniu",
+    "description": "Napisz funkcję, która dla listy jednokierunkowej zawierającej rekordy o polach (imię, wiek) dopisuje jako pierwszy element węzeł z danymi autora programu, po czym z pozostałej części listy usuwa pierwszą napotkaną osobę o podanym imieniu i zwraca jej wiek. Użyj funkcji w programie wczytującym do listy dane osób z pliku „dane.txt”, wypisz listę i zwolnij pamięć.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 34,
+    "module_id": 4,
+    "title": "Wstawianie wielokrotności po każdym elemencie ujemnym",
+    "description": "Napisz funkcję, która w liście jednokierunkowej liczb całkowitych dodaje po każdym elemencie zawierającym liczbę ujemną nowy element zawierający tę liczbę pomnożoną przez podaną w parametrze wartość, a na koniec zwraca liczbę dodanych elementów. Użyj funkcji w programie wczytującym od użytkownika liczby aż do podania 0, wypisz stan listy i zwolnij pamięć.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 35,
+    "module_id": 4,
+    "title": "Przeniesienie ostatniego elementu za węzeł k-ty",
+    "description": "Napisz funkcję, która w liście jednokierunkowej napisów przenosi ostatni element na miejsce bezpośrednio za elementem o podanym numerze kolejnym i zwraca adres elementu o tym numerze. Użyj funkcji w programie wczytującym od użytkownika do listy jednokierunkowej napisy (całymi wierszami), dopóki użytkownik nie poda pustego wiersza, zaprezentuj wynik i zwolnij pamięć.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 36,
+    "module_id": 4,
+    "title": "Usunięcie głowy i warunkowe dopisanie napisu za prefiksem",
+    "description": "Napisz funkcję, która z listy jednokierunkowej napisów usuwa pierwszy element, a następnie dopisuje podany dodatkowy napis po pierwszym napotkanym napisie zaczynającym się od zadanego znaku (o ile taki istnieje) i zwraca zmienną logiczną wskazującą, czy dopisanie nastąpiło. Użyj funkcji w programie wczytującym wiersze tekstu do pustego wiersza, wypisz listę i zwolnij pamięć.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 37,
+    "module_id": 4,
+    "title": "Usunięcie głowy i dopisanie na koniec pary z maksimum",
+    "description": "Napisz funkcję, która z listy jednokierunkowej zawierającej pary (liczba1, liczba2) usuwa pierwszy element, po czym dopisuje jako ostatni taki element, który w polu liczba1 będzie zawierał największą wartość z pozostałych elementów listy, a w polu liczba2 zadaną wartość, oraz zwraca adres tego nowego elementu. Użyj funkcji w programie wczytującym pary liczb aż do podania 0, 0, wypisz listę i zwolnij pamięć.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  },
+  {
+    "id": 38,
+    "module_id": 4,
+    "title": "Zastąpienie początku listy elementem podsumowującym",
+    "description": "Poprzedzając funkcję definicją struktury, napisz funkcję, która z listy jednokierunkowej zawierającej pary (znak, liczba) usuwa z początku co najwyżej zadaną liczbę elementów i zwraca ich faktyczną ilość, a zamiast nich dopisuje na początku element ze znakiem '!' w polu znakowym oraz średnią arytmetyczną wartości z usuniętych elementów. Użyj funkcji w programie wczytującym pary (znak, liczba) aż do ('0', 0), wypisz listę i zwolnij pamięć.",
+    "time_limit": 2,
+    "memory_limit": 128000
+  }
+]
+
+
