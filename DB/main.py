@@ -206,7 +206,19 @@ def login(
 # ----------------- COURSES -----------------
 @app.get("/courses/", response_model=list[schemas.CourseResponse])
 def get_courses(db: Session = Depends(get_db)):
-    return db.query(models.Course).all()
+    return db.query(models.Course).order_by(models.Course.id).all()
+
+
+@app.get(
+    "/courses/catalog/",
+    response_model=list[schemas.CourseCatalogResponse],
+)
+def get_course_catalog(db: Session = Depends(get_db)):
+    return (
+        db.query(models.Course)
+        .order_by(models.Course.id)
+        .all()
+    )
 
 @app.post("/courses/", response_model=schemas.CourseResponse)
 def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db)):

@@ -32,6 +32,26 @@ class CourseResponse(CourseBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+class CourseTaskResponse(BaseModel):
+    id: int
+    title: str
+    description: str
+    time_limit: float
+    memory_limit: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+class ModuleCatalogResponse(BaseModel):
+    id: int
+    title: str
+    order_index: int
+    tasks: list[CourseTaskResponse] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)
+
+class CourseCatalogResponse(CourseResponse):
+    modules: list[ModuleCatalogResponse] = Field(default_factory=list)
+
 # ================= TASK =================
 class TaskResponse(BaseModel):
     id: int

@@ -8,25 +8,47 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <section id="login-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-brand">Mecha<span>Code</span></div>
+      <p class="auth-eyebrow">PLATFORMA DO NAUKI PROGRAMOWANIA</p>
+      <h1>Zaloguj się</h1>
+      <p class="auth-description">Wybierz kurs, rozwiązuj zadania i obserwuj swój postęp.</p>
+      <form id="login-page-form" class="login-page-form">
+        <label for="login-page-email">Email</label>
+        <input id="login-page-email" type="email" placeholder="admin@mechacode.local" required>
+        <label for="login-page-password">Hasło</label>
+        <input id="login-page-password" type="password" placeholder="Hasło" required>
+        <button class="btn btn-primary w-100" type="submit">Zaloguj się</button>
+      </form>
+      <div id="login-error" class="login-error d-none"></div>
+    </div>
+  </section>
+  <div id="app-view" class="d-none">
   <nav class="topbar">
     <a class="brand" href="#">Mecha<span>Code</span></a>
-    <div class="top-actions"><form id="login-form" class="login-form"><input id="login-email" type="email" placeholder="email" required><input id="login-password" type="password" placeholder="hasło" required><button class="login-button" type="submit">Zaloguj</button></form><button id="logout-button" class="login-button d-none">Wyloguj</button><button id="theme-button" class="icon-button" title="Zmień motyw">☼</button><span class="avatar">A</span></div>
+    <div class="top-actions"><span id="user-label" class="user-label"></span><button id="logout-button" class="login-button">Wyloguj</button><button id="theme-button" class="icon-button" title="Zmień motyw">☼</button><span class="avatar">A</span></div>
   </nav>
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="sidebar-title">ZADANIA <span id="task-count">0</span></div>
-      <div class="filters"><button class="filter active">Wszystkie</button><button class="filter">Łatwe</button><button class="filter">Średnie</button></div>
-      <div id="task-list" class="task-list"><div class="loading">Ładowanie zadań...</div></div>
+      <div class="sidebar-title">KURSY <span id="course-count">0</span></div>
+      <div id="course-list" class="course-list"><div class="loading">Ładowanie kursów...</div></div>
     </aside>
     <main class="workspace">
       <div id="alert" class="alert d-none" role="alert"></div>
+      <section id="course-overview" class="course-overview">
+        <p class="auth-eyebrow">TWÓJ PROGRAM NAUKI</p>
+        <h1>Wybierz kurs</h1>
+        <p>Rozwijaj umiejętności krok po kroku, rozwiązując kolejne zadania.</p>
+        <div id="course-cards" class="course-cards"></div>
+      </section>
       <div class="split-view">
         <section class="problem-panel">
           <div class="panel-tabs"><button class="panel-tab active">Opis</button><button class="panel-tab">Rozwiązania</button><button class="panel-tab">Historia</button></div>
           <div class="problem-content">
             <div class="d-flex justify-content-between align-items-start gap-2">
               <div><h1 id="task-title">Wybierz zadanie</h1><span id="task-difficulty" class="difficulty easy">ŁATWE</span></div>
-              <button id="refresh-button" class="icon-button" title="Odśwież zadania">↻</button>
+              <button id="back-to-courses" class="toolbar-button">← Kursy</button>
             </div>
             <div id="task-description" class="description"><p>Wybierz zadanie z listy, aby zobaczyć jego treść.</p></div>
             <div class="examples"><h2>Przykład</h2><pre id="task-example">Wejście:  wybierz zadanie
@@ -46,6 +68,7 @@ Wyjście: rozwiązanie</pre></div>
         </section>
       </div>
     </main>
+  </div>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
   <script src="app.js"></script>
