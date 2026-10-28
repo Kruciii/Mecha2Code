@@ -2,6 +2,7 @@ import os
 import logging
 import time
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 import jwt
 from fastapi import BackgroundTasks, FastAPI, Depends, HTTPException, status
@@ -203,13 +204,35 @@ def require_admin(
         )
     return current_user
 
+
+def delete_task_cascade(db: Session, task_id: int):
+    """Pomocnicze kaskadowe usuwanie zadania wraz z powiązanymi danymi."""
+    submissions = (
+        db.query(models.TaskSubmission)
+        .filter(models.TaskSubmission.task_id == task_id)
+        .all()
+    )
+    submission_ids = [s.id for s in submissions]
+    if submission_ids:
+        db.query(models.SubmissionTestResult).filter(
+            models.SubmissionTestResult.submission_id.in_(submission_ids)
+        ).delete(synchronize_session=False)
+
+        db.query(models.TaskSubmission).filter(
+            models.TaskSubmission.id.in_(submission_ids)
+        ).delete(synchronize_session=False)
+
+    task = db.query(models.Task).filter(models.Task.id == task_id).first()
+    if task:
+        db.delete(task)
+
 # ----------------- USERS -----------------
 @app.get("/users/", response_model=list[schemas.UserResponse])
 def get_users(
     db: Session = Depends(get_db),
     _current_user: models.User = Depends(require_admin),
 ):
-    users = db.query(models.User).all()
+    users = db.query(models.User).order_by(models.User.id).all()
     return users
 
 @app.post("/users/", response_model=schemas.UserResponse)
@@ -248,6 +271,80 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     return new_user
+
+
+@app.put("/users/{user_id}", response_model=schemas.UserResponse)
+def update_user(
+    user_id: int,
+    user_update: schemas.UserUpdate,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_admin),
+):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Nie znaleziono użytkownika.")
+
+    if user_update.email is not None:
+        norm_email = user_update.email.strip().lower()
+        if not norm_email.endswith(f"@{PW_EMAIL_DOMAIN}"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Dozwolone są tylko adresy email w domenie {PW_EMAIL_DOMAIN}.",
+            )
+        existing = db.query(models.User).filter(
+            func.lower(models.User.email) == norm_email,
+            models.User.id != user_id,
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Ten email jest już zajęty przez innego użytkownika.")
+        user.email = norm_email
+
+    if user_update.role is not None:
+        norm_role = user_update.role.strip().lower()
+        if norm_role not in {"student", "teacher", "admin"}:
+            raise HTTPException(status_code=400, detail="Nieprawidłowa rola. Dozwolone: student, teacher, admin.")
+        user.role = norm_role
+
+    if user_update.semester is not None:
+        user.semester = user_update.semester
+    if user_update.start_year is not None:
+        user.start_year = user_update.start_year
+    if user_update.major is not None:
+        user.major = user_update.major
+    if user_update.password:
+        user.hashed_password = password_context.hash(user_update.password)
+
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@app.delete("/users/{user_id}", status_code=status.HTTP_200_OK)
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin),
+):
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Nie możesz usunąć swojego własnego konta administratora.")
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Nie znaleziono użytkownika.")
+
+    user_subs = db.query(models.TaskSubmission).filter(models.TaskSubmission.user_id == user_id).all()
+    sub_ids = [s.id for s in user_subs]
+    if sub_ids:
+        db.query(models.SubmissionTestResult).filter(
+            models.SubmissionTestResult.submission_id.in_(sub_ids)
+        ).delete(synchronize_session=False)
+        db.query(models.TaskSubmission).filter(
+            models.TaskSubmission.id.in_(sub_ids)
+        ).delete(synchronize_session=False)
+
+    db.delete(user)
+    db.commit()
+    return {"detail": f"Użytkownik o ID {user_id} ('{user.email}') został pomyślnie usunięty."}
 
 
 # ----------------- AUTH -----------------
@@ -313,6 +410,29 @@ def create_course(
     return new_course
 
 
+@app.put("/courses/{course_id}", response_model=schemas.CourseResponse)
+def update_course(
+    course_id: int,
+    course_update: schemas.CourseUpdate,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_teacher_or_admin),
+):
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Nie znaleziono kursu.")
+    if course_update.title is not None:
+        course.title = course_update.title
+    if course_update.description is not None:
+        course.description = course_update.description
+    if course_update.language is not None:
+        course.language = course_update.language
+    if course_update.language_id is not None:
+        course.language_id = course_update.language_id
+    db.commit()
+    db.refresh(course)
+    return course
+
+
 @app.delete("/courses/{course_id}", status_code=status.HTTP_200_OK)
 def delete_course(
     course_id: int,
@@ -323,12 +443,7 @@ def delete_course(
     if not course:
         raise HTTPException(status_code=404, detail="Nie znaleziono kursu o podanym ID.")
 
-    task_ids = [
-        task.id
-        for module in course.modules
-        for task in module.tasks
-    ]
-
+    task_ids = [task.id for module in course.modules for task in module.tasks]
     if task_ids:
         submissions = (
             db.query(models.TaskSubmission)
@@ -350,12 +465,119 @@ def delete_course(
     return {"detail": f"Kurs o ID {course_id} ('{course.title}') został pomyślnie usunięty."}
 
 
+# ----------------- MODULES -----------------
+@app.post("/modules/", response_model=schemas.ModuleResponse)
+def create_module(
+    module_data: schemas.ModuleCreate,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_teacher_or_admin),
+):
+    course = db.query(models.Course).filter(models.Course.id == module_data.course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Nie znaleziono kursu o podanym course_id.")
+    new_module = models.Module(
+        course_id=module_data.course_id,
+        title=module_data.title,
+        order_index=module_data.order_index,
+    )
+    db.add(new_module)
+    db.commit()
+    db.refresh(new_module)
+    return new_module
+
+
+@app.put("/modules/{module_id}", response_model=schemas.ModuleResponse)
+def update_module(
+    module_id: int,
+    module_update: schemas.ModuleUpdate,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_teacher_or_admin),
+):
+    module = db.query(models.Module).filter(models.Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Nie znaleziono modułu.")
+    if module_update.course_id is not None:
+        course = db.query(models.Course).filter(models.Course.id == module_update.course_id).first()
+        if not course:
+            raise HTTPException(status_code=404, detail="Nowy kurs nie istnieje.")
+        module.course_id = module_update.course_id
+    if module_update.title is not None:
+        module.title = module_update.title
+    if module_update.order_index is not None:
+        module.order_index = module_update.order_index
+    db.commit()
+    db.refresh(module)
+    return module
+
+
+@app.delete("/modules/{module_id}", status_code=status.HTTP_200_OK)
+def delete_module(
+    module_id: int,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_teacher_or_admin),
+):
+    module = db.query(models.Module).filter(models.Module.id == module_id).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Nie znaleziono modułu.")
+
+    task_ids = [task.id for task in module.tasks]
+    if task_ids:
+        submissions = (
+            db.query(models.TaskSubmission)
+            .filter(models.TaskSubmission.task_id.in_(task_ids))
+            .all()
+        )
+        submission_ids = [s.id for s in submissions]
+        if submission_ids:
+            db.query(models.SubmissionTestResult).filter(
+                models.SubmissionTestResult.submission_id.in_(submission_ids)
+            ).delete(synchronize_session=False)
+
+            db.query(models.TaskSubmission).filter(
+                models.TaskSubmission.id.in_(submission_ids)
+            ).delete(synchronize_session=False)
+
+    db.delete(module)
+    db.commit()
+    return {"detail": f"Moduł o ID {module_id} ('{module.title}') został usunięty."}
+
+
 @app.get("/tasks/", response_model=list[schemas.TaskListResponse])
 def get_tasks(
     db: Session = Depends(get_db),
     _current_user: models.User = Depends(get_current_user),
 ):
     return db.query(models.Task).order_by(models.Task.id).all()
+
+
+@app.get("/tasks/{task_id}", response_model=schemas.TaskResponse)
+def get_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    task = db.query(models.Task).filter(models.Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Nie znaleziono zadania.")
+
+    test_cases = task.test_cases
+    if current_user.role.lower() not in {"admin", "teacher"}:
+        test_cases = [tc for tc in test_cases if not tc.is_hidden]
+
+    return schemas.TaskResponse(
+        id=task.id,
+        module_id=task.module_id,
+        title=task.title,
+        description=task.description,
+        time_limit=task.time_limit,
+        memory_limit=task.memory_limit,
+        tags=task.tags,
+        solution=task.solution,
+        test_cases=[
+            schemas.TestCaseResponse.model_validate(tc)
+            for tc in test_cases
+        ],
+    )
 
 
 @app.get(
@@ -411,6 +633,7 @@ def create_task(
         time_limit=task.time_limit,
         memory_limit=task.memory_limit,
         tags=task.tags,
+        solution=task.solution,
     )
     db.add(new_task)
     db.flush()
@@ -428,6 +651,54 @@ def create_task(
     db.commit()
     db.refresh(new_task)
     return new_task
+
+
+@app.put("/tasks/{task_id}", response_model=schemas.TaskResponse)
+def update_task(
+    task_id: int,
+    task_update: schemas.TaskUpdate,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_teacher_or_admin),
+):
+    task = db.query(models.Task).filter(models.Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Nie znaleziono zadania.")
+    if task_update.module_id is not None:
+        module = db.query(models.Module).filter(models.Module.id == task_update.module_id).first()
+        if not module:
+            raise HTTPException(status_code=404, detail="Nowy moduł nie istnieje.")
+        task.module_id = task_update.module_id
+    if task_update.title is not None:
+        task.title = task_update.title
+    if task_update.description is not None:
+        task.description = task_update.description
+    if task_update.time_limit is not None:
+        task.time_limit = task_update.time_limit
+    if task_update.memory_limit is not None:
+        task.memory_limit = task_update.memory_limit
+    if task_update.tags is not None:
+        task.tags = task_update.tags
+    if task_update.solution is not None:
+        task.solution = task_update.solution
+
+    db.commit()
+    db.refresh(task)
+    return task
+
+
+@app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
+def delete_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_teacher_or_admin),
+):
+    task = db.query(models.Task).filter(models.Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Nie znaleziono zadania.")
+    title = task.title
+    delete_task_cascade(db, task_id)
+    db.commit()
+    return {"detail": f"Zadanie o ID {task_id} ('{title}') zostało pomyślnie usunięte."}
 
 
 @app.post("/courses/{course_id}/tasks-batch", response_model=schemas.TaskBatchCreateResponse)
@@ -519,6 +790,7 @@ def create_tasks_batch(
                 time_limit=item.task.time_limit,
                 memory_limit=item.task.memory_limit,
                 tags=item.task.tags,
+                solution=item.task.solution,
             )
             db.add(new_task)
             db.flush()
@@ -548,6 +820,87 @@ def create_tasks_batch(
         dry_run=False,
         message="Batch zadań został zapisany.",
     )
+
+
+# ----------------- TEST CASES -----------------
+@app.get("/tasks/{task_id}/test-cases/", response_model=list[schemas.TestCaseResponse])
+def get_task_test_cases(
+    task_id: int,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_teacher_or_admin),
+):
+    task = db.query(models.Task).filter(models.Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Nie znaleziono zadania.")
+    return task.test_cases
+
+
+@app.post("/tasks/{task_id}/test-cases/", response_model=schemas.TestCaseResponse)
+def create_test_case(
+    task_id: int,
+    test_case_data: schemas.TestCaseCreate,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_teacher_or_admin),
+):
+    task = db.query(models.Task).filter(models.Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Nie znaleziono zadania.")
+    new_tc = models.TestCase(
+        task_id=task_id,
+        input_data=test_case_data.input_data,
+        expected_output=test_case_data.expected_output,
+        is_hidden=test_case_data.is_hidden,
+    )
+    db.add(new_tc)
+    db.commit()
+    db.refresh(new_tc)
+    return new_tc
+
+
+@app.put("/test-cases/{test_case_id}", response_model=schemas.TestCaseResponse)
+def update_test_case(
+    test_case_id: int,
+    test_case_update: schemas.TestCaseUpdate,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_teacher_or_admin),
+):
+    tc = db.query(models.TestCase).filter(models.TestCase.id == test_case_id).first()
+    if not tc:
+        raise HTTPException(status_code=404, detail="Nie znaleziono przypadku testowego.")
+    if test_case_update.task_id is not None:
+        task = db.query(models.Task).filter(models.Task.id == test_case_update.task_id).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Nowe zadanie nie istnieje.")
+        tc.task_id = test_case_update.task_id
+    if test_case_update.input_data is not None:
+        tc.input_data = test_case_update.input_data
+    if test_case_update.expected_output is not None:
+        tc.expected_output = test_case_update.expected_output
+    if test_case_update.is_hidden is not None:
+        tc.is_hidden = test_case_update.is_hidden
+
+    db.commit()
+    db.refresh(tc)
+    return tc
+
+
+@app.delete("/test-cases/{test_case_id}", status_code=status.HTTP_200_OK)
+def delete_test_case(
+    test_case_id: int,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_teacher_or_admin),
+):
+    tc = db.query(models.TestCase).filter(models.TestCase.id == test_case_id).first()
+    if not tc:
+        raise HTTPException(status_code=404, detail="Nie znaleziono przypadku testowego.")
+
+    db.query(models.SubmissionTestResult).filter(
+        models.SubmissionTestResult.test_case_id == test_case_id
+    ).delete(synchronize_session=False)
+
+    db.delete(tc)
+    db.commit()
+    return {"detail": f"Przypadek testowy o ID {test_case_id} został pomyślnie usunięty."}
 
 
 # ----------------- SUBMISSIONS -----------------
@@ -637,14 +990,18 @@ def get_submission(
 ):
     submission = (
         db.query(models.TaskSubmission)
-        .filter(
-            models.TaskSubmission.id == submission_id,
-            models.TaskSubmission.user_id == current_user.id,
-        )
+        .filter(models.TaskSubmission.id == submission_id)
         .first()
     )
     if submission is None:
         raise HTTPException(status_code=404, detail="Nie znaleziono zgłoszenia.")
+
+    # Sprawdzenie uprawnień: student może przeglądać wyłącznie własne zgłoszenia
+    if current_user.role.lower() not in {"admin", "teacher"} and submission.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Brak uprawnień do przeglądania zgłoszeń innych użytkowników.",
+        )
 
     if submission.status_id in (None, 1, 2):
         try:
@@ -666,16 +1023,22 @@ def get_submission(
 )
 def get_task_submissions(
     task_id: int,
+    user_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    query = db.query(models.TaskSubmission).filter(
+        models.TaskSubmission.task_id == task_id
+    )
+    if current_user.role.lower() in {"admin", "teacher"}:
+        if user_id is not None:
+            query = query.filter(models.TaskSubmission.user_id == user_id)
+    else:
+        # Student zawsze widzi wyłącznie swoje zgłoszenia
+        query = query.filter(models.TaskSubmission.user_id == current_user.id)
+
     submissions = (
-        db.query(models.TaskSubmission)
-        .filter(
-            models.TaskSubmission.task_id == task_id,
-            models.TaskSubmission.user_id == current_user.id,
-        )
-        .order_by(models.TaskSubmission.created_at.desc(), models.TaskSubmission.id.desc())
+        query.order_by(models.TaskSubmission.created_at.desc(), models.TaskSubmission.id.desc())
         .all()
     )
     return submissions

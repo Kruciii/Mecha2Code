@@ -39,6 +39,7 @@ class Task(Base):
     time_limit = Column(Float, default=2.0) # w sekundach
     memory_limit = Column(Integer, default=128000) # w kilobajtach (128MB)
     tags = Column(String(255), nullable=False, default="łatwe") # tagi / poziom trudności (np. łatwe, średnie, trudne)
+    solution = Column(Text, nullable=True) # Wzorcowe / referencyjne rozwiązanie zadania
 
     module = relationship("Module", back_populates="tasks")
     test_cases = relationship("TestCase", back_populates="task", cascade="all, delete-orphan")

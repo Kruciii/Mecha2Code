@@ -321,9 +321,18 @@ const loadTaskHistory = async (taskId) => {
   }
 };
 
-const renderTaskSolutions = (task) => {
+const renderTaskSolutions = async (task) => {
   const container = $("#solutions-content");
   if (!container) return;
+
+  if (!task.solution) {
+    try {
+      const fullTask = await request(`/tasks/${task.id}`);
+      if (fullTask?.solution) {
+        task.solution = fullTask.solution;
+      }
+    } catch (_) {}
+  }
 
   const progress = taskProgress.get(task.id);
   const isAccepted = progress?.status_id === 3;
@@ -342,6 +351,19 @@ const renderTaskSolutions = (task) => {
     </div>
   `;
 
+  if (task.solution) {
+    contentHtml += `
+      <div class="solution-box mt-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h3 class="m-0 text-primary">Wzorcowe rozwiązanie</h3>
+          <button id="load-reference-solution-btn" class="history-btn">Wklej do edytora</button>
+        </div>
+        <p class="text-muted small mb-2">Oficjalne rozwiązanie referencyjne spełniające 100% testów jednostkowych.</p>
+        <pre class="solution-code-block"><code>${escapeHtml(task.solution)}</code></pre>
+      </div>
+    `;
+  }
+
   if (isAccepted) {
     contentHtml += `
       <div class="solution-box mt-3">
@@ -349,7 +371,7 @@ const renderTaskSolutions = (task) => {
           <h3 class="m-0 text-success">✓ Zadanie rozwiązane poprawnie!</h3>
           <button id="load-accepted-code-btn" class="history-btn">Załaduj Twój kod do edytora</button>
         </div>
-        <p class="text-muted small">Gratulacje! Twoje rozwiązanie zaliczyło 100% testów jednostkowych.</p>
+        <p class="text-muted small">Gratulacje! Twoje wcześniejsze rozwiązanie zaliczyło 100% testów.</p>
       </div>
     `;
   } else {
@@ -365,6 +387,16 @@ const renderTaskSolutions = (task) => {
   }
 
   container.innerHTML = contentHtml;
+
+  const loadRefBtn = $("#load-reference-solution-btn");
+  if (loadRefBtn && task.solution) {
+    loadRefBtn.addEventListener("click", () => {
+      if (editor) {
+        editor.setValue(task.solution);
+        showAlert("Wklejono wzorcowe rozwiązanie do edytora", "success");
+      }
+    });
+  }
 
   const loadAcceptedBtn = $("#load-accepted-code-btn");
   if (loadAcceptedBtn && progress?.submission_id) {

@@ -13,6 +13,14 @@ class UserCreate(UserBase):
     password: str # Zwykłe hasło, które API potem zahashuje
     registration_secret: str
 
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    role: Optional[str] = None
+    semester: Optional[int] = Field(default=None, ge=1, le=10)
+    start_year: Optional[int] = Field(default=None, ge=2000, le=2100)
+    major: Optional[Literal["mechatro", "AIR"]] = None
+    password: Optional[str] = None
+
 class UserResponse(UserBase):
     id: int
     role: str
@@ -33,7 +41,32 @@ class CourseBase(BaseModel):
 class CourseCreate(CourseBase):
     pass
 
+class CourseUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    language: Optional[str] = None
+    language_id: Optional[int] = None
+
 class CourseResponse(CourseBase):
+    id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+# ================= MODULE =================
+class ModuleBase(BaseModel):
+    course_id: int
+    title: str
+    order_index: int = 1
+
+class ModuleCreate(ModuleBase):
+    pass
+
+class ModuleUpdate(BaseModel):
+    course_id: Optional[int] = None
+    title: Optional[str] = None
+    order_index: Optional[int] = None
+
+class ModuleResponse(ModuleBase):
     id: int
 
     model_config = ConfigDict(from_attributes=True)
@@ -46,6 +79,12 @@ class TestCaseBase(BaseModel):
 
 class TestCaseCreate(TestCaseBase):
     pass
+
+class TestCaseUpdate(BaseModel):
+    task_id: Optional[int] = None
+    input_data: Optional[str] = None
+    expected_output: Optional[str] = None
+    is_hidden: Optional[bool] = None
 
 class TestCaseResponse(TestCaseBase):
     id: int
@@ -60,10 +99,20 @@ class TaskBase(BaseModel):
     description: str
     time_limit: float = 2.0
     memory_limit: int = 128000
-    tags: str = "łatwe" 
+    tags: str = "łatwe"
+    solution: Optional[str] = None
 
 class TaskCreate(TaskBase):
     test_cases: List[TestCaseCreate] = Field(default_factory=list)
+
+class TaskUpdate(BaseModel):
+    module_id: Optional[int] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    time_limit: Optional[float] = None
+    memory_limit: Optional[int] = None
+    tags: Optional[str] = None
+    solution: Optional[str] = None
 
 class TaskResponse(TaskBase):
     id: int
@@ -77,7 +126,8 @@ class TaskBatchItemTask(BaseModel):
     description: str
     time_limit: float = 2.0
     memory_limit: int = 128000
-    tags: str = "łatwe" 
+    tags: str = "łatwe"
+    solution: Optional[str] = None
 
 class TaskBatchItem(BaseModel):
     module_id: int
@@ -102,7 +152,8 @@ class CourseTaskResponse(BaseModel):
     description: str
     time_limit: float
     memory_limit: int
-    tags: str = "łatwe" 
+    tags: str = "łatwe"
+    solution: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -125,7 +176,8 @@ class TaskListResponse(BaseModel):
     description: str
     time_limit: float
     memory_limit: int
-    tags: str = "łatwe" 
+    tags: str = "łatwe"
+    solution: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
