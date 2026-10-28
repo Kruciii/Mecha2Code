@@ -42,7 +42,7 @@ class Task(Base):
 
     module = relationship("Module", back_populates="tasks")
     test_cases = relationship("TestCase", back_populates="task", cascade="all, delete-orphan")
-    submissions = relationship("TaskSubmission", back_populates="task")
+    submissions = relationship("TaskSubmission", back_populates="task", cascade="all, delete-orphan")
 
 
 class TestCase(Base):

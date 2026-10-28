@@ -313,6 +313,43 @@ def create_course(
     return new_course
 
 
+@app.delete("/courses/{course_id}", status_code=status.HTTP_200_OK)
+def delete_course(
+    course_id: int,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_teacher_or_admin),
+):
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Nie znaleziono kursu o podanym ID.")
+
+    task_ids = [
+        task.id
+        for module in course.modules
+        for task in module.tasks
+    ]
+
+    if task_ids:
+        submissions = (
+            db.query(models.TaskSubmission)
+            .filter(models.TaskSubmission.task_id.in_(task_ids))
+            .all()
+        )
+        submission_ids = [s.id for s in submissions]
+        if submission_ids:
+            db.query(models.SubmissionTestResult).filter(
+                models.SubmissionTestResult.submission_id.in_(submission_ids)
+            ).delete(synchronize_session=False)
+
+            db.query(models.TaskSubmission).filter(
+                models.TaskSubmission.id.in_(submission_ids)
+            ).delete(synchronize_session=False)
+
+    db.delete(course)
+    db.commit()
+    return {"detail": f"Kurs o ID {course_id} ('{course.title}') został pomyślnie usunięty."}
+
+
 @app.get("/tasks/", response_model=list[schemas.TaskListResponse])
 def get_tasks(
     db: Session = Depends(get_db),
