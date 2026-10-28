@@ -840,6 +840,44 @@ const showCourseOverview = (e) => {
   renderCourses();
 };
 
+const toggleSidebar = () => {
+  const sidebar = $(".sidebar");
+  if (!sidebar) return;
+  sidebar.classList.toggle("collapsed");
+  const isCollapsed = sidebar.classList.contains("collapsed");
+  localStorage.setItem("sidebar_collapsed", isCollapsed ? "true" : "false");
+
+  const floatingBtn = $("#floating-expand-sidebar-btn");
+  if (floatingBtn) {
+    if (isCollapsed) floatingBtn.classList.remove("d-none");
+    else floatingBtn.classList.add("d-none");
+  }
+
+  const toggleTopBtn = $("#toggle-sidebar-btn");
+  if (toggleTopBtn) {
+    toggleTopBtn.setAttribute("title", isCollapsed ? "Rozwiń pasek zadań (Ctrl+B)" : "Zwiń pasek zadań (Ctrl+B)");
+  }
+
+  window.setTimeout(() => {
+    if (editor) editor.layout();
+  }, 240);
+};
+
+$("#toggle-sidebar-btn")?.addEventListener("click", toggleSidebar);
+$("#collapse-sidebar-btn")?.addEventListener("click", toggleSidebar);
+$("#floating-expand-sidebar-btn")?.addEventListener("click", toggleSidebar);
+window.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+    e.preventDefault();
+    toggleSidebar();
+  }
+});
+
+if (localStorage.getItem("sidebar_collapsed") === "true") {
+  $(".sidebar")?.classList.add("collapsed");
+  $("#floating-expand-sidebar-btn")?.classList.remove("d-none");
+}
+
 $("#back-to-courses")?.addEventListener("click", showCourseOverview);
 $("#brand-logo")?.addEventListener("click", showCourseOverview);
 $(".brand")?.addEventListener("click", showCourseOverview);

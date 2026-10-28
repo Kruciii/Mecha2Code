@@ -85,15 +85,22 @@
   </section>
   <div id="app-view" class="d-none">
   <nav class="topbar">
-    <a class="brand" href="#" id="brand-logo" title="Przejdź do strony głównej">Mecha<span>Code</span></a>
+    <div class="d-flex align-items-center gap-2">
+      <button id="toggle-sidebar-btn" class="sidebar-toggle-top-btn" title="Zwiń / rozwiń pasek zadań (Ctrl+B)">☰</button>
+      <a class="brand" href="#" id="brand-logo" title="Przejdź do strony głównej">Mecha<span>Code</span></a>
+    </div>
     <div class="top-actions"><span id="user-label" class="user-label"></span><button id="logout-button" class="login-button">Wyloguj</button><button id="theme-button" class="icon-button" title="Zmień motyw">☼</button><span class="avatar">A</span></div>
   </nav>
   <div class="app-shell">
     <aside class="sidebar">
-      <div id="sidebar-courses-header" class="sidebar-title" title="Przejdź do listy kursów">KURSY <span id="course-count">0</span></div>
+      <div class="sidebar-header d-flex justify-content-between align-items-center mb-2">
+        <div id="sidebar-courses-header" class="sidebar-title m-0 p-0" title="Przejdź do listy kursów">KURSY <span id="course-count">0</span></div>
+        <button id="collapse-sidebar-btn" class="sidebar-collapse-btn" title="Zwiń pasek zadań">◀</button>
+      </div>
       <div id="course-list" class="course-list"><div class="loading">Ładowanie kursów...</div></div>
     </aside>
     <main class="workspace">
+      <button id="floating-expand-sidebar-btn" class="floating-expand-btn d-none" title="Rozwiń pasek zadań">▶</button>
       <div id="alert" class="alert d-none" role="alert"></div>
       <section id="course-overview" class="course-overview">
         <p class="auth-eyebrow">TWÓJ PROGRAM NAUKI</p>
