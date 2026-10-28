@@ -73,7 +73,7 @@ class TaskBatchItem(BaseModel):
     test_cases: List[TestCaseCreate] = Field(default_factory=list)
 
 class TaskBatchCreateRequest(BaseModel):
-    items: List[TaskBatchItem] = Field(default_factory=list)
+    items: List[TaskBatchItem] = Field(default_factory=list, max_length=100)
     dry_run: bool = False
 
 class TaskBatchCreateResponse(BaseModel):

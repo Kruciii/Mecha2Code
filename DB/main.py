@@ -1,13 +1,29 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from database import get_db, engine
 import models
 import schemas
 
+BATCH_MAX_ITEMS = 100
+
 # Jeśli tabele jeszcze nie istnieją, ta linijka je stworzy (przydatne przed ustawieniem Alembica)
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="MechaCode API")
+
+
+def require_teacher_or_admin(
+    x_user_id: int = Header(..., alias="X-User-Id"),
+    db: Session = Depends(get_db),
+):
+    user = db.query(models.User).filter(models.User.id == x_user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Nie znaleziono użytkownika autoryzującego.")
+
+    if user.role.lower() not in {"admin", "teacher"}:
+        raise HTTPException(status_code=403, detail="Brak uprawnień. Wymagana rola admin lub teacher.")
+
+    return user
 
 # ----------------- USERS -----------------
 @app.get("/users/", response_model=list[schemas.UserResponse])
@@ -85,13 +101,24 @@ def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/courses/{course_id}/tasks-batch", response_model=schemas.TaskBatchCreateResponse)
-def create_tasks_batch(course_id: int, payload: schemas.TaskBatchCreateRequest, db: Session = Depends(get_db)):
+def create_tasks_batch(
+    course_id: int,
+    payload: schemas.TaskBatchCreateRequest,
+    db: Session = Depends(get_db),
+    _current_user=Depends(require_teacher_or_admin),
+):
     course = db.query(models.Course).filter(models.Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Nie znaleziono kursu.")
 
     if not payload.items:
         raise HTTPException(status_code=400, detail="Batch jest pusty.")
+
+    if len(payload.items) > BATCH_MAX_ITEMS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Za duży batch. Maksymalna liczba zadań w jednym żądaniu to {BATCH_MAX_ITEMS}.",
+        )
 
     module_ids = {item.module_id for item in payload.items}
     modules = db.query(models.Module).filter(models.Module.id.in_(module_ids)).all()
