@@ -36,6 +36,51 @@ const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 }[character]));
+const parseMarkdownFallback = (text) => {
+  if (!text) return "";
+  let out = escapeHtml(text);
+
+  // Fenced code blocks ```python ... ```
+  out = out.replace(/```(?:[a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g, (_, code) => {
+    return `<pre><code>${code.trim()}</code></pre>`;
+  });
+
+  // Inline code `...`
+  out = out.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+
+  // Headers
+  out = out.replace(/^### (.*$)/gim, "\n<h3>$1</h3>\n");
+  out = out.replace(/^## (.*$)/gim, "\n<h2>$1</h2>\n");
+  out = out.replace(/^# (.*$)/gim, "\n<h1>$1</h1>\n");
+
+  // Bold **...**
+  out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+
+  // Italic *...*
+  out = out.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
+
+  // Ordered list items (1. item)
+  out = out.replace(/^\s*\d+\.\s+(.*$)/gim, "<li>$1</li>");
+
+  // Unordered list items (- item)
+  out = out.replace(/^\s*[-*]\s+(.*$)/gim, "<li>$1</li>");
+
+  // Wrap list items in <ul>
+  out = out.replace(/((?:<li>.*?<\/li>\s*)+)/gims, "\n<ul>$1</ul>\n");
+
+  // Paragraphs
+  const blocks = out.split(/\n\s*\n/).map((chunk) => {
+    const trimmed = chunk.trim();
+    if (!trimmed) return "";
+    if (trimmed.startsWith("<h") || trimmed.startsWith("<pre") || trimmed.startsWith("<ul") || trimmed.startsWith("<ol") || trimmed.startsWith("<li")) {
+      return trimmed;
+    }
+    return `<p>${trimmed.replace(/\n/g, "<br>")}</p>`;
+  }).filter(Boolean);
+
+  return blocks.join("\n");
+};
+
 const renderMarkdown = (text) => {
   if (!text) return "";
   try {
@@ -45,9 +90,9 @@ const renderMarkdown = (text) => {
       if (typeof markedLib === "function") return markedLib(text);
     }
   } catch (err) {
-    console.warn("Markdown parse error:", err);
+    console.warn("Marked.js error, using fallback:", err);
   }
-  return `<p>${escapeHtml(text)}</p>`;
+  return parseMarkdownFallback(text);
 };
 const showAlert = (message, type = "success") => {
   const alert = $("#alert");
@@ -433,6 +478,22 @@ const createEditor = () => {
     });
 
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, submit);
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Space, () => {
+      editor.trigger("", "editor.action.triggerSuggest", {});
+    });
+
+    // Synchronize if selectedCourse was loaded before Monaco finished loading
+    if (selectedCourse) {
+      const langMode = (selectedCourse.language || (selectedCourse.language_id === 71 || (selectedCourse.title || "").toLowerCase().includes("python") ? "python" : "cpp")).toLowerCase();
+      const langId = selectedCourse.language_id || (langMode === "python" ? 71 : 54);
+      monaco.editor.setModelLanguage(editor.getModel(), langMode);
+      editor.setValue(templates[langId] || defaultCode);
+      const langBadge = $("#current-language-badge");
+      if (langBadge) {
+        langBadge.textContent = langMode.toUpperCase();
+        langBadge.className = `lang-badge lang-${langMode}`;
+      }
+    }
   });
 };
 const login = async (email, password) => {
