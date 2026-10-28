@@ -298,7 +298,9 @@ def create_course(
 ):
     new_course = models.Course(
         title=course.title,
-        description=course.description
+        description=course.description,
+        language=course.language,
+        language_id=course.language_id,
     )
     db.add(new_course)
     db.commit()

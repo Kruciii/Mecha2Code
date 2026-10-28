@@ -106,6 +106,8 @@ def get_or_create_course(db):
         course = models.Course(
             title=COURSE_TITLE,
             description="Pięć zadań do sprawdzenia konfiguracji MechaCode.",
+            language="cpp",
+            language_id=54,
         )
         db.add(course)
         db.flush()

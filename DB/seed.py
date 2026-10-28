@@ -47,6 +47,8 @@ def seed_database() -> None:
             course = models.Course(
                 title=COURSE_TITLE,
                 description="Wprowadzenie do programowania w języku C++.",
+                language="cpp",
+                language_id=54,
             )
             db.add(course)
             db.flush()

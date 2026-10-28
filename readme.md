@@ -20,6 +20,8 @@ erDiagram
         int id PK
         string title
         text description
+        string language "cpp, python, java"
+        int language_id "np. 54, 71, 62"
     }
 
     MODULE {

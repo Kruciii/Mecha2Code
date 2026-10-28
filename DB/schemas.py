@@ -27,6 +27,8 @@ class TokenResponse(BaseModel):
 class CourseBase(BaseModel):
     title: str
     description: Optional[str] = None
+    language: str = "cpp"
+    language_id: int = 54
 
 class CourseCreate(CourseBase):
     pass

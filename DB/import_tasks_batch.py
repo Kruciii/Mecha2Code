@@ -52,10 +52,18 @@ def ensure_course(db: Session, course_id: int) -> models.Course:
             id=course_id,
             title="Programowanie w Pythonie",
             description="Kurs programowania w języku Python: od podstaw do zaawansowanych mechanizmów.",
+            language="python",
+            language_id=71,
         )
         db.add(course)
         db.flush()
-    print(f"Wybrany kurs: [ID={course.id}] '{course.title}'")
+    else:
+        if course_id == 3 or "python" in (course.title or "").lower():
+            course.language = "python"
+            course.language_id = 71
+            db.add(course)
+            db.flush()
+    print(f"Wybrany kurs: [ID={course.id}] '{course.title}' (język: {course.language}, id: {course.language_id})")
     return course
 
 

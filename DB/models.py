@@ -9,6 +9,8 @@ class Course(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(200), nullable=False)
     description = Column(Text)
+    language = Column(String(50), nullable=False, default="cpp") # np. cpp, python, java
+    language_id = Column(Integer, nullable=False, default=54) # 54: C++, 71: Python, 62: Java
 
     # Relacja do modułów: jeden kurs -> wiele modułów
     modules = relationship("Module", back_populates="course", cascade="all, delete-orphan")

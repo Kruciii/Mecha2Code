@@ -74,3 +74,18 @@ body.light-editor .editor-panel { background:#fff; border-color:var(--border); }
 .difficulty.easy { background: #d1e7dd; color: #0f5132; }
 .difficulty.medium { background: #fff3cd; color: #856404; }
 .difficulty.hard { background: #f8d7da; color: #842029; }
+
+.toolbar-label { font-size: 11px; color: #8e96a4; text-transform: uppercase; font-weight: 700; }
+.lang-badge {
+  background: var(--purple);
+  color: #fff;
+  border-radius: 4px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.lang-badge.lang-python { background: #3572A5; }
+.lang-badge.lang-cpp { background: #f34b7d; }
+.lang-badge.lang-java { background: #b07219; }

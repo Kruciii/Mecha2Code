@@ -38,12 +38,14 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character
 }[character]));
 const renderMarkdown = (text) => {
   if (!text) return "";
-  if (typeof marked !== "undefined" && marked.parse) {
-    try {
-      return marked.parse(text);
-    } catch (_) {
-      return `<p>${escapeHtml(text)}</p>`;
+  try {
+    const markedLib = window.marked;
+    if (markedLib) {
+      if (typeof markedLib.parse === "function") return markedLib.parse(text);
+      if (typeof markedLib === "function") return markedLib(text);
     }
+  } catch (err) {
+    console.warn("Markdown parse error:", err);
   }
   return `<p>${escapeHtml(text)}</p>`;
 };
@@ -184,6 +186,30 @@ const selectCourse = (course) => {
   selectedCourse = course;
   $("#course-overview").classList.add("d-none");
   $(".split-view").classList.add("visible");
+
+  // Wykryj język kursu z backendu
+  const langMode = (course.language || (course.language_id === 71 || (course.title || "").toLowerCase().includes("python") ? "python" : "cpp")).toLowerCase();
+  const langId = course.language_id || (langMode === "python" ? 71 : (langMode === "java" ? 62 : 54));
+
+  // Zaktualizuj backing select i badge języka
+  const langSelect = $("#language");
+  if (langSelect) langSelect.value = String(langId);
+
+  const langBadge = $("#current-language-badge");
+  if (langBadge) {
+    langBadge.textContent = langMode.toUpperCase();
+    langBadge.className = `lang-badge lang-${langMode}`;
+  }
+
+  // Ustaw język i szablon w Monaco Editor
+  if (editor) {
+    const model = editor.getModel();
+    if (model) {
+      monaco.editor.setModelLanguage(model, langMode);
+    }
+    editor.setValue(templates[langId] || defaultCode);
+  }
+
   renderCourseTasks(course);
   const firstTask = allCourseTasks(course)[0];
   if (firstTask) selectTask(firstTask);
@@ -358,6 +384,16 @@ const setupLanguageIntelliSense = () => {
 };
 
 const createEditor = () => {
+  window.MonacoEnvironment = {
+    getWorkerUrl: function (workerId, label) {
+      return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+        self.MonacoEnvironment = {
+          baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/'
+        };
+        importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/base/worker/workerMain.js');
+      `)}`;
+    }
+  };
   require.config({ paths: { vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs" } });
   require(["vs/editor/editor.main"], () => {
     setupLanguageIntelliSense();
