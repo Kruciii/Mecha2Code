@@ -27,10 +27,23 @@ const showAlert = (message, type = "success") => {
 const request = async (path, options = {}) => {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-  const response = await fetch(`${API_URL}${path}`, { ...options, headers });
+  let response;
+  try {
+    response = await fetch(`${API_URL}${path}`, { ...options, headers });
+  } catch (err) {
+    throw new Error(`Błąd sieci: nie można połączyć się z API (${err.message})`);
+  }
   if (!response.ok) {
-    let detail = `Błąd API (${response.status})`;
-    try { detail = (await response.json()).detail || detail; } catch (_) {}
+    let detail = `Błąd API (${response.status} ${response.statusText})`;
+    try {
+      const data = await response.json();
+      if (data && data.detail) detail = data.detail;
+    } catch (_) {
+      try {
+        const text = await response.text();
+        if (text) detail = `${detail}: ${text.slice(0, 100)}`;
+      } catch (_) {}
+    }
     throw new Error(detail);
   }
   return response.json();
@@ -217,9 +230,31 @@ const createEditor = () => {
 };
 const login = async (email, password) => {
   const body = new URLSearchParams({ username: email, password });
-  const response = await fetch(`${API_URL}/login`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
-  if (!response.ok) throw new Error((await response.json()).detail || "Logowanie nie powiodło się.");
-  accessToken = (await response.json()).access_token;
+  let response;
+  try {
+    response = await fetch(`${API_URL}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    });
+  } catch (err) {
+    throw new Error(`Błąd połączenia z serwerem API (${err.message})`);
+  }
+  if (!response.ok) {
+    let detail = `Błąd serwera (${response.status} ${response.statusText})`;
+    try {
+      const data = await response.json();
+      if (data && data.detail) detail = data.detail;
+    } catch (_) {
+      try {
+        const text = await response.text();
+        if (text) detail = `${detail}: ${text.slice(0, 100)}`;
+      } catch (_) {}
+    }
+    throw new Error(detail);
+  }
+  const data = await response.json();
+  accessToken = data.access_token;
   localStorage.setItem("mechacode_access_token", accessToken);
 };
 $("#login-page-form").addEventListener("submit", async (event) => {

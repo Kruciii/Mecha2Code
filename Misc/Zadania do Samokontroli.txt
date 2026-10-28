@@ -1,0 +1,33 @@
+II.3
+Utwórz liczby zespolone:
+z1 = 1 + 2j
+z2 = (1 + 2j) * 3
+Wypisz obie liczby i ich typ.
+
+Utwórz zmienną z = 3. Następnie trzykrotnie podnieś ją do kwadratu, za każdym razem używając operatora **= i na końcu wypisz wynik.
+
+II.4
+
+Utwórz listę a = [1, 2, 3] oraz b = a. Potem wykonaj dwa eksperymenty: a.append(4) i wypisz a, b. a = [9, 9, 9] i ponownie wypisz a, b. Zaobserwuj różnicę między „modyfikacją w miejscu” a „przypisaniem nowego obiektu”.
+
+Utwórz słownik d1 = {"a": 1}, a następnie d2 = d1. Zmień wartość pod kluczem "a" w d2 na 99. Wypisz oba słowniki.
+
+II.5
+
+Zapisz ścieżkę c:\nowy\test.txt w dwóch stringach: p1 – zwykły string, p2 – surowy string (raw string). Wypisz oba za pomocą print() i repr() i porównaj wyniki.
+
+
+Startując od listy L = list("abcdef"):
+Dodaj na koniec literę 'g' (append). 
+Rozszerz listę o [1, 2, 3] (extend). 
+Wstaw liczbę 0 na pozycję o indeksie 2 (insert). 
+Usuń element o indeksie 3 i zapisz go do zmiennej usunięty (pop). 
+Usuń pierwsze wystąpienie 'e' (remove). 
+Usuń elementy o indeksach 0 i 2 (del). 
+Usuń element o indeksach 1 i 2 za pomocą przypisania pustej listy do wycinka.
+
+II.6
+Masz słownik osoba = {'imie': 'Jan', 'wiek': 25}. Dodaj klucz 'miasto' z wartością 'Warszawa' oraz zmień wartość klucza 'wiek' na 26.
+
+Utwórz plik 'notatki.txt' i zapisz w nim tekst 'Pierwsza linijka\n' (możesz użyć notatnika). Następnie dopisz do tego pliku tekst 'Druga linijka\n' bez nadpisywania poprzedniej zawartości.
+
