@@ -39,6 +39,7 @@ erDiagram
         float time_limit "sekundy"
         int memory_limit "kilobajty"
         string tags "łatwe, trudne itp."
+        text solution "wzorcowe rozwiązanie"
     }
 
     TEST_CASE {
@@ -98,6 +99,33 @@ erDiagram
 Judge0 wykonuje każdy przypadek testowy osobno, dlatego jeden submission może
 mieć wiele rekordów `SUBMISSION_TEST_RESULT`. Każdy z nich przechowuje osobny
 token Judge0 oraz wynik konkretnego testu.
+
+Pole `solution` w tabeli `TASK` przechowuje oficjalne, wzorcowe rozwiązanie
+zadania (kod źródłowy w języku danego kursu), które jest wyświetlane w zakładce
+"Rozwiązania" na platformie.
+
+## Migracje bazy danych
+
+Wszystkie migracje schematu bazy danych znajdują się w katalogu `DB/migrations/`.
+W przypadku aktualizacji schematu bazy na środowisku produkcyjnym, należy wykonać
+odpowiedni skrypt SQL na kontenerze bazy danych `mechacode-db`, np.:
+
+```bash
+docker exec -i mechacode-db psql -U mechacode_user -d mechacode_db < DB/migrations/20261028_add_task_solution.sql
+```
+
+Dostępne migracje:
+- `20261028_add_user_academic_fields.sql` – dodanie pól akademickich (`semester`, `start_year`, `major`) do tabeli `users`.
+- `20261028_add_task_tags.sql` – dodanie kolumny `tags` (poziom trudności) do tabeli `tasks`.
+- `20261028_add_course_language.sql` – dodanie kolumn `language` i `language_id` do tabeli `courses`.
+- `20261028_add_task_solution.sql` – dodanie kolumny `solution` do tabeli `tasks`.
+
+## Uprawnienia ról API
+
+Platforma wspiera trzy role użytkowników:
+- **`student`**: Przeglądanie katalogu kursów, zadań (z odfiltrowanymi ukrytymi testami), wysyłanie rozwiązań oraz przeglądanie wyłącznie własnych zgłoszeń i historii. Brak dostępu do endpointów modyfikujących strukturę kursów lub konta innych użytkowników.
+- **`teacher`**: Wszystkie uprawnienia studenta oraz pełne zarządzanie kursami, modułami, zadaniami i przypadkami testowymi (`POST`, `PUT`, `DELETE` dla `/courses/`, `/modules/`, `/tasks/`, `/test-cases/`). Podgląd ukrytych testów oraz zgłoszeń dowolnego studenta.
+- **`admin`**: Pełne uprawnienia w systemie, w tym zarządzanie użytkownikami (`GET`, `PUT`, `DELETE` na `/users/`) oraz zmiana ról.
 
 ## Wdrażanie frontendu na Azure
 
