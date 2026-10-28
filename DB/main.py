@@ -43,6 +43,15 @@ password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 
+def verify_password(plain_password: str, hashed_password: str | None) -> bool:
+    if not hashed_password:
+        return False
+    try:
+        return password_context.verify(plain_password, hashed_password)
+    except Exception:
+        return False
+
+
 def create_access_token(user: models.User) -> str:
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {"sub": str(user.id), "email": user.email, "role": user.role, "exp": expires_at}
@@ -242,13 +251,19 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
-    user = db.query(models.User).filter(models.User.email == form_data.username).first()
-    if user is None or not password_context.verify(form_data.password, user.hashed_password):
+    normalized_email = form_data.username.strip().lower()
+    user = (
+        db.query(models.User)
+        .filter(func.lower(models.User.email) == normalized_email)
+        .first()
+    )
+    if user is None or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Nieprawidłowy email lub hasło.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
     return {"access_token": create_access_token(user), "token_type": "bearer"}
 
 

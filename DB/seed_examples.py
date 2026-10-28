@@ -67,17 +67,31 @@ TASKS = [
 
 
 def get_or_create_admin(db):
+    # Usunięcie starych kont ze sztucznymi haszami
+    db.query(models.User).filter(models.User.hashed_password.like("fake_hashed_%")).delete(synchronize_session=False)
+
     admin = (
         db.query(models.User)
         .filter(models.User.email == ADMIN_EMAIL)
         .first()
     )
+    new_hashed = password_context.hash(ADMIN_PASSWORD)
     if admin is None:
         admin = models.User(
             email=ADMIN_EMAIL,
             role="admin",
-            hashed_password=password_context.hash(ADMIN_PASSWORD),
+            hashed_password=new_hashed,
+            semester=1,
+            start_year=2026,
+            major="mechatro",
         )
+        db.add(admin)
+    else:
+        admin.role = "admin"
+        admin.hashed_password = new_hashed
+        admin.semester = 1
+        admin.start_year = 2026
+        admin.major = "mechatro"
         db.add(admin)
     return admin
 

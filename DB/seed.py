@@ -18,13 +18,24 @@ def seed_database() -> None:
     db = SessionLocal()
 
     try:
+        db.query(models.User).filter(models.User.hashed_password.like("fake_hashed_%")).delete(synchronize_session=False)
         user = db.query(models.User).filter(models.User.email == USER_EMAIL).first()
+        user_hashed = password_context.hash(USER_PASSWORD)
         if user is None:
             user = models.User(
                 email=USER_EMAIL,
                 role="student",
-                hashed_password=password_context.hash(USER_PASSWORD),
+                hashed_password=user_hashed,
+                semester=1,
+                start_year=2026,
+                major="mechatro",
             )
+            db.add(user)
+        else:
+            user.hashed_password = user_hashed
+            user.semester = 1
+            user.start_year = 2026
+            user.major = "mechatro"
             db.add(user)
 
         course = (

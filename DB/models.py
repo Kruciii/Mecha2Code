@@ -61,9 +61,9 @@ class User(Base):
     email = Column(String(150), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     role = Column(String(50), default="student") # np. student, admin, teacher
-    semester = Column(Integer, nullable=False)
-    start_year = Column(Integer, nullable=False)
-    major = Column(String(50), nullable=False)
+    semester = Column(Integer, nullable=False, default=1)
+    start_year = Column(Integer, nullable=False, default=2026)
+    major = Column(String(50), nullable=False, default="mechatro")
 
     submissions = relationship("TaskSubmission", back_populates="user")
 
