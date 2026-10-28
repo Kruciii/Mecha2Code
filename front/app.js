@@ -7,13 +7,31 @@ let selectedCourse = null;
 let selectedTask = null;
 let editor = null;
 
-const defaultCode = `#include <iostream>
+const templates = {
+  54: `#include <iostream>
 using namespace std;
 
 int main() {
-    // Napisz swoje rozwiązanie tutaj
+    // Napisz swoje rozwiązanie w C++
     return 0;
-}`;
+}`,
+  71: `# Napisz swoje rozwiązanie w Pythonie
+def main():
+    pass
+
+if __name__ == "__main__":
+    main()`,
+  62: `import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        // Napisz swoje rozwiązanie w Javie
+    }
+}`
+};
+const defaultCode = templates[54];
+const getSelectedLanguageId = () => Number($("#language")?.value || 54);
+const getLanguageMode = (id) => ({ 54: "cpp", 71: "python", 62: "java" }[id] || "cpp");
 const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
@@ -238,14 +256,146 @@ const pollSubmission = async (submissionId, attempt = 0) => {
     showAlert(submission.status_id === 3 ? `Accepted: ${message}` : `Niepoprawne rozwiązanie: ${message}`, submission.status_id === 3 ? "success" : "danger");
   } catch (error) { showAlert(`Nie udało się pobrać wyniku: ${error.message}`, "danger"); }
 };
+const setupLanguageIntelliSense = () => {
+  // 1. Python IntelliSense & Type hints
+  monaco.languages.registerCompletionItemProvider("python", {
+    provideCompletionItems: (model, position) => {
+      const word = model.getWordUntilPosition(position);
+      const range = {
+        startLineNumber: position.lineNumber,
+        endLineNumber: position.lineNumber,
+        startColumn: word.startColumn,
+        endColumn: word.endColumn,
+      };
+
+      const suggestions = [
+        // Typy wbudowane
+        { label: "int", kind: monaco.languages.CompletionItemKind.Class, insertText: "int", detail: "class int(x=0)", documentation: "Typ liczby całkowitej o nieograniczonej precyzji.", range },
+        { label: "float", kind: monaco.languages.CompletionItemKind.Class, insertText: "float", detail: "class float(x=0.0)", documentation: "Liczba zmiennoprzecinkowa podwójnej precyzji.", range },
+        { label: "complex", kind: monaco.languages.CompletionItemKind.Class, insertText: "complex(${1:real}, ${2:imag})", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "class complex(real=0, imag=0)", documentation: "Typ liczby zespolonej (np. 1 + 2j).", range },
+        { label: "str", kind: monaco.languages.CompletionItemKind.Class, insertText: "str", detail: "class str(object='')", documentation: "Niemutowalny łańcuch znaków Unicode.", range },
+        { label: "list", kind: monaco.languages.CompletionItemKind.Class, insertText: "list", detail: "class list[T]", documentation: "Wbudowana lista dynamiczna.", range },
+        { label: "dict", kind: monaco.languages.CompletionItemKind.Class, insertText: "dict", detail: "class dict[K, V]", documentation: "Słownik par klucz-wartość (tablica asocjacyjna).", range },
+        { label: "set", kind: monaco.languages.CompletionItemKind.Class, insertText: "set", detail: "class set[T]", documentation: "Zbiór unikalnych elementów.", range },
+        { label: "tuple", kind: monaco.languages.CompletionItemKind.Class, insertText: "tuple", detail: "class tuple[T, ...]", documentation: "Niemutowalna krotka elementów.", range },
+        { label: "bool", kind: monaco.languages.CompletionItemKind.Class, insertText: "bool", detail: "class bool(x=False)", documentation: "Wartość logiczna (True / False).", range },
+
+        // Funkcje wbudowane
+        { label: "print", kind: monaco.languages.CompletionItemKind.Function, insertText: "print(${1:value})", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "print(*values, sep=' ', end='\\n')", documentation: "Wypisuje wartości do strumienia wyjściowego stdout.", range },
+        { label: "input", kind: monaco.languages.CompletionItemKind.Function, insertText: "input(${1})", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "input(prompt='') -> str", documentation: "Wczytuje linię ze standardowego wejścia stdin.", range },
+        { label: "len", kind: monaco.languages.CompletionItemKind.Function, insertText: "len(${1:obj})", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "len(obj) -> int", documentation: "Zwraca liczbę elementów w kolekcji.", range },
+        { label: "range", kind: monaco.languages.CompletionItemKind.Function, insertText: "range(${1:stop})", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "range(start=0, stop, step=1)", documentation: "Generuje sekwencję liczb całkowitych.", range },
+        { label: "enumerate", kind: monaco.languages.CompletionItemKind.Function, insertText: "enumerate(${1:iterable})", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "enumerate(iterable, start=0)", documentation: "Zwraca iterator par (indeks, element).", range },
+        { label: "zip", kind: monaco.languages.CompletionItemKind.Function, insertText: "zip(${1:iter1}, ${2:iter2})", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "zip(*iterables)", documentation: "Łączy odpowiadające sobie elementy z wielu kolekcji.", range },
+        { label: "sorted", kind: monaco.languages.CompletionItemKind.Function, insertText: "sorted(${1:iterable})", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "sorted(iterable, key=None, reverse=False)", documentation: "Zwraca nową posortowaną listę.", range },
+        { label: "isinstance", kind: monaco.languages.CompletionItemKind.Function, insertText: "isinstance(${1:obj}, ${2:classinfo})", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "isinstance(obj, classinfo) -> bool", documentation: "Sprawdza, czy obiekt jest instancją podanej klasy.", range },
+        { label: "map", kind: monaco.languages.CompletionItemKind.Function, insertText: "map(${1:func}, ${2:iterable})", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "map(func, *iterables)", documentation: "Stosuje funkcję do każdego elementu kolekcji.", range },
+        { label: "sum", kind: monaco.languages.CompletionItemKind.Function, insertText: "sum(${1:iterable})", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "sum(iterable, start=0)", documentation: "Zwraca sumę elementów w kolekcji liczb.", range },
+
+        // Snippety
+        { label: "def", kind: monaco.languages.CompletionItemKind.Snippet, insertText: "def ${1:func_name}(${2:args}):\n    ${3:pass}", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "Snippet: definicja funkcji", range },
+        { label: "for", kind: monaco.languages.CompletionItemKind.Snippet, insertText: "for ${1:item} in ${2:iterable}:\n    ${3:pass}", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "Snippet: pętla for", range },
+        { label: "fori", kind: monaco.languages.CompletionItemKind.Snippet, insertText: "for ${1:i} in range(${2:n}):\n    ${3:pass}", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "Snippet: pętla for i in range(n)", range },
+        { label: "ifmain", kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'if __name__ == "__main__":\n    ${1:main()}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "Snippet: if __name__ == '__main__':", range },
+        { label: "try", kind: monaco.languages.CompletionItemKind.Snippet, insertText: "try:\n    ${1:pass}\nexcept ${2:Exception} as ${3:e}:\n    ${4:pass}", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "Snippet: blok try-except", range },
+      ];
+      return { suggestions };
+    },
+  });
+
+  // Python Hover Docs
+  monaco.languages.registerHoverProvider("python", {
+    provideHover: (model, position) => {
+      const word = model.getWordAtPosition(position);
+      if (!word) return null;
+      const docs = {
+        int: "**class int(x=0)**\n\nWbudowany typ liczby całkowitej w Pythonie 3.",
+        float: "**class float(x=0.0)**\n\nLiczba zmiennoprzecinkowa 64-bit IEEE 754.",
+        complex: "**class complex(real=0, imag=0)**\n\nLiczba zespolona (`real + imag*j`). Posiada atrybuty `.real`, `.imag` oraz metodę `.conjugate()`.",
+        str: "**class str(object='')**\n\nNiemutowalny ciąg znaków.",
+        list: "**class list[T]**\n\nMutowalna lista dynamiczna (`.append()`, `.pop()`, `.sort()`).",
+        dict: "**class dict[K, V]**\n\nSłownik klucz-wartość (`.keys()`, `.values()`, `.items()`).",
+        set: "**class set[T]**\n\nZbiór unikalnych elementów (obsługuje `|`, `&`, `-`).",
+        tuple: "**class tuple[T, ...]**\n\nNiemutowalna krotka.",
+        print: "**print(*values, sep=' ', end='\\n')**\n\nWypisuje wartości do strumienia stdout.",
+        input: "**input(prompt='') -> str**\n\nWczytuje linię tekstu ze standardowego wejścia stdin.",
+        len: "**len(obj) -> int**\n\nZwraca liczbę elementów w obiekcie.",
+        range: "**range(start=0, stop, step=1)**\n\nGeneruje sekwencję liczb.",
+      };
+      if (docs[word.word]) {
+        return {
+          range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
+          contents: [{ value: docs[word.word] }],
+        };
+      }
+      return null;
+    },
+  });
+
+  // 2. C++ IntelliSense
+  monaco.languages.registerCompletionItemProvider("cpp", {
+    provideCompletionItems: (model, position) => {
+      const word = model.getWordUntilPosition(position);
+      const range = {
+        startLineNumber: position.lineNumber,
+        endLineNumber: position.lineNumber,
+        startColumn: word.startColumn,
+        endColumn: word.endColumn,
+      };
+
+      const suggestions = [
+        { label: "cout", kind: monaco.languages.CompletionItemKind.Snippet, insertText: "cout << ${1:value} << endl;", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "std::cout << ... << endl;", range },
+        { label: "cin", kind: monaco.languages.CompletionItemKind.Snippet, insertText: "cin >> ${1:var};", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "std::cin >> ...;", range },
+        { label: "vector", kind: monaco.languages.CompletionItemKind.Class, insertText: "vector<${1:int}> ${2:v};", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "std::vector<T>", range },
+        { label: "fori", kind: monaco.languages.CompletionItemKind.Snippet, insertText: "for (int ${1:i} = 0; ${1:i} < ${2:n}; ++${1:i}) {\n    ${3}\n}", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "for (int i = 0; i < n; ++i)", range },
+        { label: "pair", kind: monaco.languages.CompletionItemKind.Class, insertText: "pair<${1:int}, ${2:int}>", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "std::pair<T1, T2>", range },
+        { label: "map", kind: monaco.languages.CompletionItemKind.Class, insertText: "map<${1:string}, ${2:int}>", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "std::map<Key, Value>", range },
+        { label: "sort", kind: monaco.languages.CompletionItemKind.Function, insertText: "sort(${1:v}.begin(), ${1:v}.end());", insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, detail: "std::sort(begin, end)", range },
+      ];
+      return { suggestions };
+    },
+  });
+};
+
 const createEditor = () => {
   require.config({ paths: { vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs" } });
   require(["vs/editor/editor.main"], () => {
+    setupLanguageIntelliSense();
+
+    const initialLangId = getSelectedLanguageId();
+    const initialMode = getLanguageMode(initialLangId);
+
     editor = monaco.editor.create($("#source-code"), {
-      value: defaultCode, language: "cpp", theme: "vs-dark", automaticLayout: true,
-      minimap: { enabled: true }, fontSize: 14, fontFamily: "Consolas, Monaco, monospace",
-      scrollBeyondLastLine: false, tabSize: 4, wordWrap: "on", padding: { top: 14, bottom: 14 },
+      value: templates[initialLangId] || defaultCode,
+      language: initialMode,
+      theme: "vs-dark",
+      automaticLayout: true,
+      minimap: { enabled: true },
+      fontSize: 14,
+      fontFamily: "'Fira Code', Consolas, Monaco, monospace",
+      fontLigatures: true,
+      scrollBeyondLastLine: false,
+      tabSize: 4,
+      wordWrap: "on",
+      padding: { top: 14, bottom: 14 },
+      // Opcje IDE / IntelliSense:
+      quickSuggestions: { other: true, comments: false, strings: true },
+      suggestOnTriggerCharacters: true,
+      acceptSuggestionOnEnter: "on",
+      tabCompletion: "on",
+      parameterHints: { enabled: true },
+      bracketPairColorization: { enabled: true },
+      autoClosingBrackets: "always",
+      autoClosingQuotes: "always",
+      autoClosingOvertype: "always",
+      matchBrackets: "always",
+      renderLineHighlight: "all",
+      cursorBlinking: "smooth",
+      cursorSmoothCaretAnimation: "on",
+      smoothScrolling: true,
+      folding: true,
     });
+
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, submit);
   });
 };
@@ -306,7 +456,26 @@ $("#back-to-courses").addEventListener("click", () => {
   renderCourses();
 });
 $("#submit-button").addEventListener("click", submit);
-$("#reset-code").addEventListener("click", () => { if (editor) editor.setValue(defaultCode); });
+$("#reset-code").addEventListener("click", () => {
+  if (editor) {
+    const langId = getSelectedLanguageId();
+    editor.setValue(templates[langId] || defaultCode);
+  }
+});
+$("#language").addEventListener("change", () => {
+  if (!editor) return;
+  const langId = getSelectedLanguageId();
+  const mode = getLanguageMode(langId);
+  const model = editor.getModel();
+  if (model) {
+    monaco.editor.setModelLanguage(model, mode);
+  }
+  const currentVal = editor.getValue().trim();
+  const isTemplate = Object.values(templates).some((tpl) => tpl.trim() === currentVal) || !currentVal;
+  if (isTemplate) {
+    editor.setValue(templates[langId] || "");
+  }
+});
 $("#theme-button").addEventListener("click", () => {
   document.body.classList.toggle("light-editor");
   if (editor) monaco.editor.setTheme(document.body.classList.contains("light-editor") ? "vs" : "vs-dark");
