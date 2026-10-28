@@ -235,9 +235,157 @@ const renderTaskProgress = () => {
     indicator.title = status.title;
   });
 };
+const switchTab = (tabName) => {
+  document.querySelectorAll(".panel-tab").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.tab === tabName);
+  });
+  document.querySelectorAll(".tab-content").forEach((panel) => {
+    panel.classList.add("d-none");
+  });
+  const targetPanel = $(`#tab-content-${tabName}`);
+  if (targetPanel) targetPanel.classList.remove("d-none");
+
+  if (tabName === "history" && selectedTask) {
+    loadTaskHistory(selectedTask.id);
+  } else if (tabName === "solutions" && selectedTask) {
+    renderTaskSolutions(selectedTask);
+  }
+};
+
+const loadTaskHistory = async (taskId) => {
+  const container = $("#history-content");
+  if (!container) return;
+  container.innerHTML = '<div class="loading">Ładowanie historii zgłoszeń...</div>';
+
+  try {
+    const submissions = await request(`/tasks/${taskId}/submissions/`);
+    if (!submissions || submissions.length === 0) {
+      container.innerHTML = '<p class="text-muted p-2">Brak wcześniejszych zgłoszeń dla tego zadania. Rozwiąż zadanie i wyślij kod, aby zobaczyć historię.</p>';
+      return;
+    }
+
+    container.innerHTML = submissions.map((sub) => {
+      const isAccepted = sub.status_id === 3;
+      const isPending = [1, 2].includes(sub.status_id);
+      const statusBadge = isAccepted
+        ? '<span class="result-status accepted">✓ Zaakceptowane</span>'
+        : isPending
+        ? '<span class="result-status pending">… Sprawdzanie</span>'
+        : '<span class="result-status failed">✕ Błędne</span>';
+
+      const dateStr = sub.created_at ? new Date(sub.created_at).toLocaleString("pl-PL") : "Brak daty";
+      const scoreStr = `${sub.score ?? 0}% (${sub.passed_tests}/${sub.total_tests} testów)`;
+      const langName = sub.language_id === 71 ? "Python" : sub.language_id === 62 ? "Java" : "C++";
+
+      return `
+        <div class="history-item">
+          <div class="history-item-info">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <strong>Zgłoszenie #${sub.id}</strong>
+              ${statusBadge}
+              <span class="badge bg-secondary">${langName}</span>
+            </div>
+            <div class="history-item-score">${scoreStr}</div>
+            <div class="history-item-date">${dateStr}</div>
+          </div>
+          <div class="history-actions">
+            ${sub.source_code ? `<button class="history-btn restore-code-btn" data-sub-id="${sub.id}">Przywróć kod</button>` : ""}
+            <button class="history-btn view-result-btn" data-sub-id="${sub.id}">Pokaż wynik</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    container.querySelectorAll(".restore-code-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const sub = submissions.find((s) => s.id === Number(btn.dataset.subId));
+        if (sub && sub.source_code && editor) {
+          editor.setValue(sub.source_code);
+          showAlert(`Przywrócono kod ze zgłoszenia #${sub.id}`, "success");
+        }
+      });
+    });
+
+    container.querySelectorAll(".view-result-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const sub = submissions.find((s) => s.id === Number(btn.dataset.subId));
+        if (sub) {
+          renderSubmissionResult(sub);
+          switchTab("description");
+          showAlert(`Wyświetlono wynik zgłoszenia #${sub.id}`, "info");
+        }
+      });
+    });
+  } catch (err) {
+    container.innerHTML = `<p class="text-danger p-2">Nie udało się pobrać historii: ${escapeHtml(err.message)}</p>`;
+  }
+};
+
+const renderTaskSolutions = (task) => {
+  const container = $("#solutions-content");
+  if (!container) return;
+
+  const progress = taskProgress.get(task.id);
+  const isAccepted = progress?.status_id === 3;
+  const difficultyTags = (task.tags || "łatwe").toUpperCase();
+  const timeLimit = task.time_limit || 2;
+  const memoryLimit = task.memory_limit || 128000;
+
+  let contentHtml = `
+    <div class="solution-box">
+      <h3>Informacje techniczne</h3>
+      <ul>
+        <li><strong>Poziom trudności / Tagi:</strong> ${escapeHtml(difficultyTags)}</li>
+        <li><strong>Limit czasu wykonania:</strong> ${timeLimit} s</li>
+        <li><strong>Limit pamięci RAM:</strong> ${memoryLimit} KB (~${Math.round(memoryLimit / 1024)} MB)</li>
+      </ul>
+    </div>
+  `;
+
+  if (isAccepted) {
+    contentHtml += `
+      <div class="solution-box mt-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h3 class="m-0 text-success">✓ Zadanie rozwiązane poprawnie!</h3>
+          <button id="load-accepted-code-btn" class="history-btn">Załaduj Twój kod do edytora</button>
+        </div>
+        <p class="text-muted small">Gratulacje! Twoje rozwiązanie zaliczyło 100% testów jednostkowych.</p>
+      </div>
+    `;
+  } else {
+    contentHtml += `
+      <div class="solution-box mt-3">
+        <h3>Wskazówki algorytmiczne</h3>
+        <p>1. Zwróć uwagę na format danych wejściowych i wyjściowych podany w opisie zadania.</p>
+        <p>2. Upewnij się, że nie wypisujesz zbędnych znaków (np. <code>input('...')</code>), ponieważ automatyczna sprawdzarka porównuje wyjście dosłownie.</p>
+        <p>3. Przetestuj swój kod na podanych przykładach przed wysłaniem ostatecznego rozwiązania.</p>
+        <p class="text-muted small mt-2">Wszystkie Twoje próby są na bieżąco archiwizowane w zakładce <strong>Historia</strong>.</p>
+      </div>
+    `;
+  }
+
+  container.innerHTML = contentHtml;
+
+  const loadAcceptedBtn = $("#load-accepted-code-btn");
+  if (loadAcceptedBtn && progress?.submission_id) {
+    loadAcceptedBtn.addEventListener("click", async () => {
+      try {
+        const sub = await request(`/submissions/${progress.submission_id}`);
+        if (sub && sub.source_code && editor) {
+          editor.setValue(sub.source_code);
+          showAlert("Załadowano zaakceptowane rozwiązanie do edytora", "success");
+        }
+      } catch (e) {
+        showAlert("Nie udało się załadować kodu: " + e.message, "danger");
+      }
+    });
+  }
+};
+
 const allCourseTasks = (course) => course.modules.flatMap((module) => module.tasks);
 const selectTask = async (task) => {
   selectedTask = task;
+  switchTab("description");
   $("#course-overview").classList.add("d-none");
   $(".split-view").classList.add("visible");
   $("#task-title").textContent = task.title;
@@ -309,6 +457,10 @@ const selectCourse = (course) => {
   renderCourseTasks(course);
   const firstTask = allCourseTasks(course)[0];
   if (firstTask) selectTask(firstTask);
+
+  window.setTimeout(() => {
+    if (editor) editor.layout();
+  }, 60);
 };
 const renderCourses = () => {
   $("#course-count").textContent = courses.length;
@@ -376,6 +528,9 @@ const pollSubmission = async (submissionId, attempt = 0) => {
     }
     const message = `${submission.score}% (${submission.passed_tests}/${submission.total_tests} testów)`;
     showAlert(submission.status_id === 3 ? `Accepted: ${message}` : `Niepoprawne rozwiązanie: ${message}`, submission.status_id === 3 ? "success" : "danger");
+    if (selectedTask && $("#tab-content-history") && !$("#tab-content-history").classList.contains("d-none")) {
+      loadTaskHistory(selectedTask.id);
+    }
   } catch (error) { showAlert(`Nie udało się pobrać wyniku: ${error.message}`, "danger"); }
 };
 const setupLanguageIntelliSense = () => {
@@ -707,6 +862,17 @@ $("#language").addEventListener("change", () => {
 $("#theme-button").addEventListener("click", () => {
   document.body.classList.toggle("light-editor");
   if (editor) monaco.editor.setTheme(document.body.classList.contains("light-editor") ? "vs" : "vs-dark");
+});
+document.querySelectorAll(".panel-tab").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    switchTab(btn.dataset.tab);
+  });
+});
+$("#refresh-history-btn")?.addEventListener("click", () => {
+  if (selectedTask) loadTaskHistory(selectedTask.id);
+});
+window.addEventListener("resize", () => {
+  if (editor) editor.layout();
 });
 createEditor();
 if (accessToken) {

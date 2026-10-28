@@ -616,3 +616,24 @@ def get_submission(
             ) from exc
 
     return submission
+
+
+@app.get(
+    "/tasks/{task_id}/submissions/",
+    response_model=list[schemas.TaskSubmissionResponse],
+)
+def get_task_submissions(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    submissions = (
+        db.query(models.TaskSubmission)
+        .filter(
+            models.TaskSubmission.task_id == task_id,
+            models.TaskSubmission.user_id == current_user.id,
+        )
+        .order_by(models.TaskSubmission.created_at.desc(), models.TaskSubmission.id.desc())
+        .all()
+    )
+    return submissions

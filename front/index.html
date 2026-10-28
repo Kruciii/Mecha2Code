@@ -103,8 +103,14 @@
       </section>
       <div class="split-view">
         <section class="problem-panel">
-          <div class="panel-tabs"><button class="panel-tab active">Opis</button><button class="panel-tab">Rozwiązania</button><button class="panel-tab">Historia</button></div>
-          <div class="problem-content">
+          <div class="panel-tabs">
+            <button class="panel-tab active" data-tab="description">Opis</button>
+            <button class="panel-tab" data-tab="solutions">Rozwiązania</button>
+            <button class="panel-tab" data-tab="history">Historia</button>
+          </div>
+
+          <!-- TAB 1: OPIS -->
+          <div id="tab-content-description" class="tab-content problem-content">
             <div class="d-flex justify-content-between align-items-start gap-2">
               <div><h1 id="task-title">Wybierz zadanie</h1><span id="task-difficulty" class="difficulty easy">ŁATWE</span></div>
               <button id="back-to-courses" class="toolbar-button">← Kursy</button>
@@ -117,6 +123,27 @@ Wyjście: rozwiązanie</pre></div>
               <div class="result-heading"><h2>Wynik sprawdzania</h2><span id="result-status" class="result-status error">Brak zgłoszenia</span></div>
               <div id="result-summary" class="result-summary">Wyślij rozwiązanie, aby zobaczyć wynik.</div>
               <div id="test-results" class="test-results"></div>
+            </div>
+          </div>
+
+          <!-- TAB 2: ROZWIĄZANIA -->
+          <div id="tab-content-solutions" class="tab-content problem-content d-none">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+              <div><h2 class="m-0">Rozwiązania i wskazówki</h2><p class="text-muted small m-0">Wskazówki algorytmiczne i omówienie zadania</p></div>
+            </div>
+            <div id="solutions-content" class="description">
+              <p>Wybierz zadanie z listy, aby zobaczyć wskazówki do rozwiązania.</p>
+            </div>
+          </div>
+
+          <!-- TAB 3: HISTORIA -->
+          <div id="tab-content-history" class="tab-content problem-content d-none">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div><h2 class="m-0">Historia zgłoszeń</h2><p class="text-muted small m-0">Twoje wcześniejsze próby dla bieżącego zadania</p></div>
+              <button id="refresh-history-btn" class="toolbar-button">↻ Odśwież</button>
+            </div>
+            <div id="history-content" class="history-list">
+              <div class="loading">Ładowanie historii zgłoszeń...</div>
             </div>
           </div>
         </section>

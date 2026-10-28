@@ -165,6 +165,7 @@ class TaskSubmissionResponse(BaseModel):
     user_id: int
     task_id: int
     language_id: int
+    source_code: Optional[str] = None
     status_id: Optional[int]
     score: Optional[float] = None
     total_tests: int = 0
