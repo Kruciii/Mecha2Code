@@ -31,6 +31,19 @@ def apply_auto_migrations(db_engine):
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS semester INTEGER DEFAULT 1;",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS start_year INTEGER DEFAULT 2026;",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS major VARCHAR(50) DEFAULT 'mechatro';",
+        """
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM information_schema.table_constraints
+                WHERE constraint_name = 'submission_test_results_test_case_id_fkey'
+            ) THEN
+                ALTER TABLE submission_test_results DROP CONSTRAINT submission_test_results_test_case_id_fkey;
+                ALTER TABLE submission_test_results ADD CONSTRAINT submission_test_results_test_case_id_fkey
+                    FOREIGN KEY (test_case_id) REFERENCES test_cases(id) ON DELETE CASCADE;
+            END IF;
+        END $$;
+        """,
     ]
     try:
         with db_engine.begin() as conn:

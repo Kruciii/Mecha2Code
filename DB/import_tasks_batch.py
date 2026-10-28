@@ -129,7 +129,25 @@ def import_batch(course_id: int, file_path: str | None = None, dry_run: bool = F
             target_module_ids = [m.id for m in module_map.values()]
             print(f"Czyszczenie istniejących zadań w modułach: {target_module_ids}...")
             if not dry_run:
-                db.query(models.Task).filter(models.Task.module_id.in_(target_module_ids)).delete(synchronize_session=False)
+                tasks_to_delete = db.query(models.Task).filter(models.Task.module_id.in_(target_module_ids)).all()
+                for t in tasks_to_delete:
+                    sub_ids = [s.id for s in t.submissions]
+                    if sub_ids:
+                        db.query(models.SubmissionTestResult).filter(
+                            models.SubmissionTestResult.submission_id.in_(sub_ids)
+                        ).delete(synchronize_session=False)
+                        db.query(models.TaskSubmission).filter(
+                            models.TaskSubmission.id.in_(sub_ids)
+                        ).delete(synchronize_session=False)
+                    tc_ids = [tc.id for tc in t.test_cases]
+                    if tc_ids:
+                        db.query(models.SubmissionTestResult).filter(
+                            models.SubmissionTestResult.test_case_id.in_(tc_ids)
+                        ).delete(synchronize_session=False)
+                        db.query(models.TestCase).filter(
+                            models.TestCase.id.in_(tc_ids)
+                        ).delete(synchronize_session=False)
+                    db.delete(t)
                 db.flush()
 
         created_tasks = 0
@@ -165,17 +183,34 @@ def import_batch(course_id: int, file_path: str | None = None, dry_run: bool = F
                     existing_task.memory_limit = memory_limit
                     existing_task.tags = tags
                     existing_task.solution = solution
-                    # Usuń stare test case'y i wstaw nowe
-                    db.query(models.TestCase).filter(models.TestCase.task_id == existing_task.id).delete()
-                    for tc in test_cases_info:
-                        db.add(
-                            models.TestCase(
-                                task_id=existing_task.id,
-                                input_data=tc["input_data"],
-                                expected_output=tc["expected_output"],
-                                is_hidden=bool(tc.get("is_hidden", False)),
+
+                    # Bezpieczna aktualizacja test case'ów w miejscu (zapobiega FK violation)
+                    existing_tcs = list(existing_task.test_cases)
+                    for idx, tc in enumerate(test_cases_info):
+                        if idx < len(existing_tcs):
+                            existing_tcs[idx].input_data = tc["input_data"]
+                            existing_tcs[idx].expected_output = tc["expected_output"]
+                            existing_tcs[idx].is_hidden = bool(tc.get("is_hidden", False))
+                        else:
+                            db.add(
+                                models.TestCase(
+                                    task_id=existing_task.id,
+                                    input_data=tc["input_data"],
+                                    expected_output=tc["expected_output"],
+                                    is_hidden=bool(tc.get("is_hidden", False)),
+                                )
                             )
-                        )
+
+                    # Jeśli w bazie było więcej testów niż w batchu, usuwamy nadmiarowe
+                    if len(existing_tcs) > len(test_cases_info):
+                        excess_tcs = existing_tcs[len(test_cases_info):]
+                        excess_ids = [tc.id for tc in excess_tcs]
+                        db.query(models.SubmissionTestResult).filter(
+                            models.SubmissionTestResult.test_case_id.in_(excess_ids)
+                        ).delete(synchronize_session=False)
+                        for tc in excess_tcs:
+                            db.delete(tc)
+
                 updated_tasks += 1
                 task_id_label = f"ID={existing_task.id}"
             else:
