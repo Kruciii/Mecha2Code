@@ -11,7 +11,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from database import SessionLocal, get_db, engine
+from database import SessionLocal, get_db, engine, apply_auto_migrations
 import models
 import schemas
 from judge0_client import Judge0Error, enqueue_batch, get_batch_results
@@ -27,6 +27,7 @@ def get_registration_secret() -> str:
 
 # Jeśli tabele jeszcze nie istnieją, ta linijka je stworzy (przydatne przed ustawieniem Alembica)
 models.Base.metadata.create_all(bind=engine)
+apply_auto_migrations(engine)
 
 app = FastAPI(title="MechaCode API")
 logger = logging.getLogger(__name__)

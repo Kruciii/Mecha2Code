@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from sqlalchemy.orm import Session
-from database import SessionLocal, Base, engine
+from database import SessionLocal, Base, engine, apply_auto_migrations
 import models
 
 DEFAULT_MODULE_NAMES = {
@@ -117,6 +117,7 @@ def import_batch(course_id: int, file_path: str | None = None, dry_run: bool = F
         print("TRYB DRY-RUN: Żadne zmiany nie zostaną zapisane w bazie.")
 
     Base.metadata.create_all(bind=engine)
+    apply_auto_migrations(engine)
     db = SessionLocal()
 
     try:

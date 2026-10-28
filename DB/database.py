@@ -1,7 +1,10 @@
 import os
-from sqlalchemy import create_engine
+import logging
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 # 1. Connection String - adres Twojej bazy 
@@ -17,6 +20,27 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # 4. Klasa bazowa - od niej będą dziedziczyć wszystkie Twoje tabele (np. User, Commit)
 Base = declarative_base()
+
+def apply_auto_migrations(db_engine):
+    """Automatycznie uzupełnia brakujące kolumny w istniejących tabelach."""
+    statements = [
+        "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS solution TEXT;",
+        "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS tags VARCHAR(255) DEFAULT 'łatwe';",
+        "ALTER TABLE courses ADD COLUMN IF NOT EXISTS language VARCHAR(50) DEFAULT 'cpp';",
+        "ALTER TABLE courses ADD COLUMN IF NOT EXISTS language_id INTEGER DEFAULT 54;",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS semester INTEGER DEFAULT 1;",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS start_year INTEGER DEFAULT 2026;",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS major VARCHAR(50) DEFAULT 'mechatro';",
+    ]
+    try:
+        with db_engine.begin() as conn:
+            for stmt in statements:
+                try:
+                    conn.execute(text(stmt))
+                except Exception:
+                    pass
+    except Exception as e:
+        logger.warning("Auto-migracja schematu bazy danych została pominięta: %s", e)
 
 # 5. Dependency - funkcja pomocnicza do FastAPI, która bezpiecznie otwiera i zamyka sesję
 def get_db():
