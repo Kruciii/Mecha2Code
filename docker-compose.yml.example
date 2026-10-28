@@ -1,0 +1,81 @@
+services:
+  mechacode-db:
+    image: postgres:16-alpine
+    container_name: mechacode-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${MECHACODE_DB_USER}
+      POSTGRES_PASSWORD: ${MECHACODE_DB_PASSWORD}
+      POSTGRES_DB: ${MECHACODE_DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - mechacode-pgdata:/var/lib/postgresql/data
+  api:
+    build:
+      context: ./Mecha2Code/DB
+    container_name: mechacode-api
+    restart: always
+    environment:
+      DATABASE_URL: "postgresql+psycopg2://${MECHACODE_DB_USER}:${MECHACODE_DB_PASSWORD}@mechacode-db:5432/${MECHACODE_DB_NAME}"
+      JUDGE0_URL: "http://judge0-server:2358"
+      JUDGE0_BATCH_SIZE: "20"
+      JUDGE0_POLL_INTERVAL_SECONDS: "1.5"
+      JUDGE0_MAX_POLL_ATTEMPTS: "40"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY}"
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      - mechacode-db
+      - judge0-server
+
+  judge0-server:
+    image: judge0/judge0:1.13.1
+    container_name: judge0-server
+    restart: always
+    privileged: true
+    shm_size: 256m
+    ports:
+      - "2358:2358"
+    env_file: judge0.conf
+    depends_on:
+      - judge0-db
+      - judge0-redis
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+
+  judge0-worker:
+    image: judge0/judge0:1.13.1
+    container_name: judge0-worker
+    restart: always
+    command: ["./scripts/workers"]
+    privileged: true
+    shm_size: 256m
+    env_file: judge0.conf
+    depends_on:
+      - judge0-db
+      - judge0-redis
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+
+  judge0-db:
+    image: postgres:16-alpine
+    container_name: judge0-db
+    restart: always
+    env_file: judge0.conf
+    volumes:
+      - judge0-pgdata:/var/lib/postgresql/data
+
+  judge0-redis:
+    image: redis:7-alpine
+    container_name: judge0-redis
+    restart: always
+    command: [
+      "sh", "-c",
+      'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"'
+    ]
+    env_file: judge0.conf
+
+volumes:
+  mechacode-pgdata:
+  judge0-pgdata:
