@@ -54,6 +54,9 @@ erDiagram
         string email
         string hashed_password
         string role "student, admin, teacher"
+        int semester "semestr studiów (1-10)"
+        int start_year "rok rozpoczęcia (np. 2026)"
+        string major "kierunek: mechatro, AIR"
     }
 
     TASK_SUBMISSION {
@@ -105,7 +108,7 @@ chmod +x deploy_front.sh
 ./deploy_front.sh
 ```
 
-Skrypt kopiuje `front/index.html`, `front/styles.css` oraz `front/app.js`
+Skrypt kopiuje pliki frontendu (`index.html`, `styles.css`, `app.js`, `marked.min.js`, `katex.min.js`, `katex.min.css`)
 do `/var/www/mechacode-front`. Jeśli katalog docelowy ma inną lokalizację, można ją przekazać
 przez zmienną:
 
