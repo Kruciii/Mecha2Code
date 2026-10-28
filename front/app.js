@@ -831,13 +831,20 @@ $("#logout-button").addEventListener("click", () => {
   updateUserLabel();
   setAuthenticatedView(false);
 });
-$("#back-to-courses").addEventListener("click", () => {
+const showCourseOverview = (e) => {
+  if (e) e.preventDefault();
   $(".split-view").classList.remove("visible");
   $("#course-overview").classList.remove("d-none");
   selectedCourse = null;
   selectedTask = null;
   renderCourses();
-});
+};
+
+$("#back-to-courses")?.addEventListener("click", showCourseOverview);
+$("#brand-logo")?.addEventListener("click", showCourseOverview);
+$(".brand")?.addEventListener("click", showCourseOverview);
+$("#sidebar-courses-header")?.addEventListener("click", showCourseOverview);
+$(".sidebar-title")?.addEventListener("click", showCourseOverview);
 $("#submit-button").addEventListener("click", submit);
 $("#reset-code").addEventListener("click", () => {
   if (editor) {
