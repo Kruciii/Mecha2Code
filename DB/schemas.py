@@ -9,9 +9,14 @@ class UserBase(BaseModel):
     start_year: int = Field(ge=2000, le=2100)
     major: Literal["mechatro", "AIR"]
 
+class UserRegister(UserBase):
+    password: str
+    registration_secret: str
+
 class UserCreate(UserBase):
     password: str # Zwykłe hasło, które API potem zahashuje
-    registration_secret: str
+    role: str = "student"
+    registration_secret: Optional[str] = None
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None

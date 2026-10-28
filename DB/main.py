@@ -237,7 +237,50 @@ def get_users(
     return users
 
 @app.post("/users/", response_model=schemas.UserResponse)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+def create_user(
+    user: schemas.UserCreate,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_admin),
+):
+    normalized_email = user.email.strip().lower()
+
+    if not normalized_email.endswith(f"@{PW_EMAIL_DOMAIN}"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Dozwolone są tylko adresy email w domenie {PW_EMAIL_DOMAIN}.",
+        )
+
+    # Sprawdzenie czy email już istnieje
+    existing_user = (
+        db.query(models.User)
+        .filter(func.lower(models.User.email) == normalized_email)
+        .first()
+    )
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Ten email jest już zajęty.")
+
+    target_role = (user.role or "student").strip().lower()
+    if target_role not in {"student", "teacher", "admin"}:
+        raise HTTPException(status_code=400, detail="Nieprawidłowa rola. Dozwolone: student, teacher, admin.")
+
+    new_user = models.User(
+        email=normalized_email,
+        role=target_role,
+        hashed_password=password_context.hash(user.password),
+        semester=user.semester,
+        start_year=user.start_year,
+        major=user.major,
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+
+@app.post("/register", response_model=schemas.UserResponse)
+def register(user: schemas.UserRegister, db: Session = Depends(get_db)):
+    """Publiczna rejestracja kont studentów zabezpieczona kodem rejestracyjnym."""
     normalized_email = user.email.strip().lower()
 
     if not normalized_email.endswith(f"@{PW_EMAIL_DOMAIN}"):
@@ -249,7 +292,6 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if user.registration_secret.strip() != get_registration_secret():
         raise HTTPException(status_code=403, detail="Nieprawidłowe hasło rejestracyjne.")
 
-    # Sprawdzenie czy email już istnieje
     existing_user = (
         db.query(models.User)
         .filter(func.lower(models.User.email) == normalized_email)
@@ -260,7 +302,6 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
     new_user = models.User(
         email=normalized_email,
-        # Rejestracja publiczna tworzy tylko konta studentów.
         role="student",
         hashed_password=password_context.hash(user.password),
         semester=user.semester,

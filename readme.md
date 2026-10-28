@@ -123,9 +123,9 @@ Dostępne migracje:
 ## Uprawnienia ról API
 
 Platforma wspiera trzy role użytkowników:
-- **`student`**: Przeglądanie katalogu kursów, zadań (z odfiltrowanymi ukrytymi testami), wysyłanie rozwiązań oraz przeglądanie wyłącznie własnych zgłoszeń i historii. Brak dostępu do endpointów modyfikujących strukturę kursów lub konta innych użytkowników.
+- **`student`**: Przeglądanie katalogu kursów, zadań (z odfiltrowanymi ukrytymi testami), wysyłanie rozwiązań oraz przeglądanie wyłącznie własnych zgłoszeń i historii. Brak dostępu do endpointów modyfikujących strukturę kursów lub konta innych użytkowników. Rejestracja publiczna nowych studentów odbywa się przez dedykowany endpoint `POST /register` z kodem rejestracyjnym.
 - **`teacher`**: Wszystkie uprawnienia studenta oraz pełne zarządzanie kursami, modułami, zadaniami i przypadkami testowymi (`POST`, `PUT`, `DELETE` dla `/courses/`, `/modules/`, `/tasks/`, `/test-cases/`). Podgląd ukrytych testów oraz zgłoszeń dowolnego studenta.
-- **`admin`**: Pełne uprawnienia w systemie, w tym zarządzanie użytkownikami (`GET`, `PUT`, `DELETE` na `/users/`) oraz zmiana ról.
+- **`admin`**: Pełne uprawnienia w systemie, w tym wyłączne zarządzanie użytkownikami (`GET`, `POST`, `PUT`, `DELETE` na `/users/`) oraz tworzenie i zmiana ról użytkowników (`student`, `teacher`, `admin`). Endpoint `POST /users/` jest ściśle zabezpieczony i dostępny wyłącznie dla administratora.
 
 ## Wdrażanie frontendu na Azure
 

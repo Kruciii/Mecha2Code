@@ -811,7 +811,7 @@ $("#register-page-form")?.addEventListener("submit", async (event) => {
   const registration_secret = $("#register-page-secret").value.trim();
 
   try {
-    const response = await fetch(`${API_URL}/users/`, {
+    const response = await fetch(`${API_URL}/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
