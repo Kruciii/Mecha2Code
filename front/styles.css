@@ -89,3 +89,32 @@ body.light-editor .editor-panel { background:#fff; border-color:var(--border); }
 .lang-badge.lang-python { background: #3572A5; }
 .lang-badge.lang-cpp { background: #f34b7d; }
 .lang-badge.lang-java { background: #b07219; }
+
+/* Authentication switch & registration form */
+.auth-switch-link {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.auth-switch-link a {
+  color: var(--purple);
+  text-decoration: none;
+  font-weight: 600;
+}
+.auth-switch-link a:hover {
+  text-decoration: underline;
+}
+.login-page-form .form-select {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 11px 12px;
+  font-size: 14px;
+  color: #17202a;
+  background-color: #fff;
+}
+.login-page-form .form-select:focus {
+  outline: none;
+  border-color: var(--purple);
+  box-shadow: 0 0 0 2px rgba(118, 87, 217, 0.2);
+}

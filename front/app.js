@@ -38,47 +38,39 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character
 }[character]));
 const parseMarkdownFallback = (text) => {
   if (!text) return "";
-  let out = escapeHtml(text);
+  let out = escapeHtml(text).replace(/\r\n/g, "\n");
 
-  // Fenced code blocks ```python ... ```
+  const codeBlocks = [];
   out = out.replace(/```(?:[a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g, (_, code) => {
-    return `<pre><code>${code.trim()}</code></pre>`;
+    const idx = codeBlocks.length;
+    codeBlocks.push(`<pre><code>${code.trim()}</code></pre>`);
+    return `%%%CODE_BLOCK_${idx}%%%`;
   });
 
-  // Inline code `...`
   out = out.replace(/`([^`\n]+)`/g, "<code>$1</code>");
-
-  // Headers
   out = out.replace(/^### (.*$)/gim, "\n<h3>$1</h3>\n");
   out = out.replace(/^## (.*$)/gim, "\n<h2>$1</h2>\n");
   out = out.replace(/^# (.*$)/gim, "\n<h1>$1</h1>\n");
-
-  // Bold **...**
   out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-
-  // Italic *...*
   out = out.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
-
-  // Ordered list items (1. item)
   out = out.replace(/^\s*\d+\.\s+(.*$)/gim, "<li>$1</li>");
-
-  // Unordered list items (- item)
   out = out.replace(/^\s*[-*]\s+(.*$)/gim, "<li>$1</li>");
-
-  // Wrap list items in <ul>
   out = out.replace(/((?:<li>.*?<\/li>\s*)+)/gims, "\n<ul>$1</ul>\n");
 
-  // Paragraphs
   const blocks = out.split(/\n\s*\n/).map((chunk) => {
     const trimmed = chunk.trim();
     if (!trimmed) return "";
-    if (trimmed.startsWith("<h") || trimmed.startsWith("<pre") || trimmed.startsWith("<ul") || trimmed.startsWith("<ol") || trimmed.startsWith("<li")) {
+    if (trimmed.startsWith("<h") || trimmed.startsWith("<ul") || trimmed.startsWith("<ol") || trimmed.startsWith("%%%CODE_BLOCK_")) {
       return trimmed;
     }
     return `<p>${trimmed.replace(/\n/g, "<br>")}</p>`;
   }).filter(Boolean);
 
-  return blocks.join("\n");
+  let result = blocks.join("\n");
+  codeBlocks.forEach((block, idx) => {
+    result = result.replace(`%%%CODE_BLOCK_${idx}%%%`, block);
+  });
+  return result;
 };
 
 const renderMarkdown = (text) => {
@@ -88,6 +80,7 @@ const renderMarkdown = (text) => {
     if (markedLib) {
       if (typeof markedLib.parse === "function") return markedLib.parse(text);
       if (typeof markedLib === "function") return markedLib(text);
+      if (markedLib.marked && typeof markedLib.marked.parse === "function") return markedLib.marked.parse(text);
     }
   } catch (err) {
     console.warn("Marked.js error, using fallback:", err);
@@ -537,6 +530,86 @@ $("#login-page-form").addEventListener("submit", async (event) => {
   } catch (exception) {
     error.textContent = exception.message;
     error.classList.remove("d-none");
+  }
+});
+
+$("#show-register-btn")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  $("#login-section")?.classList.add("d-none");
+  $("#register-section")?.classList.remove("d-none");
+  $("#login-error")?.classList.add("d-none");
+  const success = $("#login-success");
+  if (success) success.classList.add("d-none");
+});
+
+$("#show-login-btn")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  $("#register-section")?.classList.add("d-none");
+  $("#login-section")?.classList.remove("d-none");
+  $("#login-error")?.classList.add("d-none");
+  const success = $("#login-success");
+  if (success) success.classList.add("d-none");
+});
+
+$("#register-page-form")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const error = $("#login-error");
+  const success = $("#login-success");
+  if (error) error.classList.add("d-none");
+  if (success) success.classList.add("d-none");
+
+  const email = $("#register-page-email").value.trim();
+  const password = $("#register-page-password").value;
+  const semester = Number($("#register-page-semester").value);
+  const start_year = Number($("#register-page-start-year").value);
+  const major = $("#register-page-major").value;
+  const registration_secret = $("#register-page-secret").value.trim();
+
+  try {
+    const response = await fetch(`${API_URL}/users/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
+        semester,
+        start_year,
+        major,
+        registration_secret,
+      }),
+    });
+
+    if (!response.ok) {
+      let detail = `Błąd rejestracji (${response.status})`;
+      try {
+        const data = await response.json();
+        if (data && data.detail) {
+          if (Array.isArray(data.detail)) {
+            detail = data.detail.map((d) => d.msg || JSON.stringify(d)).join(", ");
+          } else {
+            detail = data.detail;
+          }
+        }
+      } catch (_) {}
+      throw new Error(detail);
+    }
+
+    if (success) {
+      success.textContent = "Konto zostało pomyślnie utworzone! Logowanie...";
+      success.classList.remove("d-none");
+    }
+
+    // Automatyczne logowanie po rejestracji
+    await login(email, password);
+    if (success) success.classList.add("d-none");
+    setAuthenticatedView(true);
+    updateUserLabel();
+    await loadCatalog();
+  } catch (err) {
+    if (error) {
+      error.textContent = err.message;
+      error.classList.remove("d-none");
+    }
   }
 });
 $("#logout-button").addEventListener("click", () => {
