@@ -8,6 +8,7 @@ from fastapi import BackgroundTasks, FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from database import SessionLocal, get_db, engine
 import models
@@ -15,6 +16,8 @@ import schemas
 from judge0_client import Judge0Error, enqueue_batch, get_batch_results
 
 BATCH_MAX_ITEMS = 100
+PW_EMAIL_DOMAIN = "pw.edu.pl"
+REGISTRATION_SECRET = os.getenv("REGISTRATION_SECRET", "TODO_CHANGE_ME")
 
 # Jeśli tabele jeszcze nie istnieją, ta linijka je stworzy (przydatne przed ustawieniem Alembica)
 models.Base.metadata.create_all(bind=engine)
@@ -197,16 +200,34 @@ def get_users(
 
 @app.post("/users/", response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    normalized_email = user.email.strip().lower()
+
+    if not normalized_email.endswith(f"@{PW_EMAIL_DOMAIN}"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Dozwolone są tylko adresy email w domenie {PW_EMAIL_DOMAIN}.",
+        )
+
+    if user.registration_secret != REGISTRATION_SECRET:
+        raise HTTPException(status_code=403, detail="Nieprawidłowe hasło rejestracyjne.")
+
     # Sprawdzenie czy email już istnieje
-    existing_user = db.query(models.User).filter(models.User.email == user.email).first()
+    existing_user = (
+        db.query(models.User)
+        .filter(func.lower(models.User.email) == normalized_email)
+        .first()
+    )
     if existing_user:
         raise HTTPException(status_code=400, detail="Ten email jest już zajęty.")
 
     new_user = models.User(
-        email=user.email,
+        email=normalized_email,
         # Rejestracja publiczna tworzy tylko konta studentów.
         role="student",
         hashed_password=password_context.hash(user.password),
+        semester=user.semester,
+        start_year=user.start_year,
+        major=user.major,
     )
 
     db.add(new_user)

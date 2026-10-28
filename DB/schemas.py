@@ -1,17 +1,21 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
 
 # ================= USER =================
 class UserBase(BaseModel):
     email: EmailStr
-    role: str = "student"
+    semester: int = Field(ge=1, le=10)
+    start_year: int = Field(ge=2000, le=2100)
+    major: Literal["mechatro", "AIR"]
 
 class UserCreate(UserBase):
     password: str # Zwykłe hasło, które API potem zahashuje
+    registration_secret: str
 
 class UserResponse(UserBase):
     id: int
+    role: str
     
     model_config = ConfigDict(from_attributes=True)
 
