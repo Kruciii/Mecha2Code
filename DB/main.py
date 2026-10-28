@@ -175,9 +175,23 @@ def require_teacher_or_admin(
         )
     return current_user
 
+
+def require_admin(
+    current_user: models.User = Depends(get_current_user),
+) -> models.User:
+    if current_user.role.lower() != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Brak uprawnień. Wymagana rola admin.",
+        )
+    return current_user
+
 # ----------------- USERS -----------------
 @app.get("/users/", response_model=list[schemas.UserResponse])
-def get_users(db: Session = Depends(get_db)):
+def get_users(
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_admin),
+):
     users = db.query(models.User).all()
     return users
 
@@ -190,7 +204,8 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
     new_user = models.User(
         email=user.email,
-        role=user.role,
+        # Rejestracja publiczna tworzy tylko konta studentów.
+        role="student",
         hashed_password=password_context.hash(user.password),
     )
 
@@ -218,7 +233,10 @@ def login(
 
 # ----------------- COURSES -----------------
 @app.get("/courses/", response_model=list[schemas.CourseResponse])
-def get_courses(db: Session = Depends(get_db)):
+def get_courses(
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(get_current_user),
+):
     return db.query(models.Course).order_by(models.Course.id).all()
 
 
@@ -226,7 +244,10 @@ def get_courses(db: Session = Depends(get_db)):
     "/courses/catalog/",
     response_model=list[schemas.CourseCatalogResponse],
 )
-def get_course_catalog(db: Session = Depends(get_db)):
+def get_course_catalog(
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(get_current_user),
+):
     return (
         db.query(models.Course)
         .order_by(models.Course.id)
@@ -234,7 +255,11 @@ def get_course_catalog(db: Session = Depends(get_db)):
     )
 
 @app.post("/courses/", response_model=schemas.CourseResponse)
-def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db)):
+def create_course(
+    course: schemas.CourseCreate,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_teacher_or_admin),
+):
     new_course = models.Course(
         title=course.title,
         description=course.description
@@ -246,7 +271,10 @@ def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db)):
 
 
 @app.get("/tasks/", response_model=list[schemas.TaskListResponse])
-def get_tasks(db: Session = Depends(get_db)):
+def get_tasks(
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(get_current_user),
+):
     return db.query(models.Task).order_by(models.Task.id).all()
 
 
@@ -287,7 +315,11 @@ def get_task_progress(
 
 
 @app.post("/tasks/", response_model=schemas.TaskResponse)
-def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db)):
+def create_task(
+    task: schemas.TaskCreate,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(require_teacher_or_admin),
+):
     module = db.query(models.Module).filter(models.Module.id == task.module_id).first()
     if not module:
         raise HTTPException(status_code=404, detail="Nie znaleziono modułu dla tego zadania.")
