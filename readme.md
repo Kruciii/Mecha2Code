@@ -36,6 +36,7 @@ erDiagram
         text description
         float time_limit "sekundy"
         int memory_limit "kilobajty"
+        string tags "łatwe, trudne itp."
     }
 
     TEST_CASE {

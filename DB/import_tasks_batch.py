@@ -137,6 +137,7 @@ def import_batch(course_id: int, file_path: str | None = None, dry_run: bool = F
             description = task_info["description"]
             time_limit = float(task_info.get("time_limit", 2.0))
             memory_limit = int(task_info.get("memory_limit", 128000))
+            tags = str(task_info.get("tags", "łatwe")).strip() or "łatwe" 
 
             existing_task = (
                 db.query(models.Task)
@@ -152,6 +153,7 @@ def import_batch(course_id: int, file_path: str | None = None, dry_run: bool = F
                     existing_task.description = description
                     existing_task.time_limit = time_limit
                     existing_task.memory_limit = memory_limit
+                    existing_task.tags = tags
                     # Usuń stare test case'y i wstaw nowe
                     db.query(models.TestCase).filter(models.TestCase.task_id == existing_task.id).delete()
                     for tc in test_cases_info:
@@ -173,6 +175,7 @@ def import_batch(course_id: int, file_path: str | None = None, dry_run: bool = F
                         description=description,
                         time_limit=time_limit,
                         memory_limit=memory_limit,
+                        tags=tags,
                     )
                     db.add(new_task)
                     db.flush()

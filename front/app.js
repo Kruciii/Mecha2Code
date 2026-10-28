@@ -18,6 +18,17 @@ const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 }[character]));
+const renderMarkdown = (text) => {
+  if (!text) return "";
+  if (typeof marked !== "undefined" && marked.parse) {
+    try {
+      return marked.parse(text);
+    } catch (_) {
+      return `<p>${escapeHtml(text)}</p>`;
+    }
+  }
+  return `<p>${escapeHtml(text)}</p>`;
+};
 const showAlert = (message, type = "success") => {
   const alert = $("#alert");
   alert.textContent = message;
@@ -114,7 +125,17 @@ const selectTask = async (task) => {
   $("#course-overview").classList.add("d-none");
   $(".split-view").classList.add("visible");
   $("#task-title").textContent = task.title;
-  $("#task-description").innerHTML = `<p>${escapeHtml(task.description)}</p>`;
+  const rawTags = (task.tags || "łatwe").trim();
+  $("#task-difficulty").textContent = rawTags.toUpperCase();
+  let diffClass = "easy";
+  const lowerTags = rawTags.toLowerCase();
+  if (lowerTags.includes("trudn") || lowerTags.includes("hard")) {
+    diffClass = "hard";
+  } else if (lowerTags.includes("średn") || lowerTags.includes("sredn") || lowerTags.includes("medium")) {
+    diffClass = "medium";
+  }
+  $("#task-difficulty").className = `difficulty ${diffClass}`;
+  $("#task-description").innerHTML = renderMarkdown(task.description);
   $("#task-example").textContent = "Wejście: dane testowe\nWyjście: oczekiwany wynik";
   document.querySelectorAll(".task-item").forEach((item) => item.classList.toggle("active", Number(item.dataset.id) === task.id));
   const progress = taskProgress.get(task.id);

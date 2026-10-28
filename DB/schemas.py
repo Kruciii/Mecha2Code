@@ -58,6 +58,7 @@ class TaskBase(BaseModel):
     description: str
     time_limit: float = 2.0
     memory_limit: int = 128000
+    tags: str = "łatwe" 
 
 class TaskCreate(TaskBase):
     test_cases: List[TestCaseCreate] = Field(default_factory=list)
@@ -74,6 +75,7 @@ class TaskBatchItemTask(BaseModel):
     description: str
     time_limit: float = 2.0
     memory_limit: int = 128000
+    tags: str = "łatwe" 
 
 class TaskBatchItem(BaseModel):
     module_id: int
@@ -98,6 +100,7 @@ class CourseTaskResponse(BaseModel):
     description: str
     time_limit: float
     memory_limit: int
+    tags: str = "łatwe" 
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -120,6 +123,7 @@ class TaskListResponse(BaseModel):
     description: str
     time_limit: float
     memory_limit: int
+    tags: str = "łatwe" 
 
     model_config = ConfigDict(from_attributes=True)
 

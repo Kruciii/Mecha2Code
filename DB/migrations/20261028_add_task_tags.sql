@@ -1,0 +1,13 @@
+BEGIN;
+
+ALTER TABLE tasks
+    ADD COLUMN IF NOT EXISTS tags VARCHAR(255) DEFAULT 'łatwe';
+
+UPDATE tasks
+SET tags = 'łatwe'
+WHERE tags IS NULL;
+
+ALTER TABLE tasks
+    ALTER COLUMN tags SET NOT NULL;
+
+COMMIT;

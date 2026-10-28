@@ -366,6 +366,7 @@ def create_task(
         description=task.description,
         time_limit=task.time_limit,
         memory_limit=task.memory_limit,
+        tags=task.tags,
     )
     db.add(new_task)
     db.flush()
@@ -473,6 +474,7 @@ def create_tasks_batch(
                 description=item.task.description,
                 time_limit=item.task.time_limit,
                 memory_limit=item.task.memory_limit,
+                tags=item.task.tags,
             )
             db.add(new_task)
             db.flush()
