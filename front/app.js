@@ -75,17 +75,75 @@ const parseMarkdownFallback = (text) => {
 
 const renderMarkdown = (text) => {
   if (!text) return "";
+
+  // 1. Chroń bloki kodu i kod inline przed parsowaniem LaTeX i Markdown
+  const codeVault = [];
+  let protectedText = String(text).replace(/(```[\s\S]*?```|`[^`\n]+`)/g, (match) => {
+    const placeholder = `%%%CODE_VAULT_${codeVault.length}%%%`;
+    codeVault.push(match);
+    return placeholder;
+  });
+
+  // 2. Wyodrębnij wzory blokowe $$ ... $$
+  const mathVault = [];
+  protectedText = protectedText.replace(/\$\$([\s\S]+?)\$\$/g, (_, math) => {
+    const placeholder = `%%%MATH_BLOCK_${mathVault.length}%%%`;
+    mathVault.push({ math: math.trim(), display: true });
+    return placeholder;
+  });
+
+  // 3. Wyodrębnij wzory inline $ ... $
+  protectedText = protectedText.replace(/(?<!\\)\$([^\$\n]+?)(?<!\\)\$/g, (_, math) => {
+    if (!math.trim()) return `$${math}$`;
+    const placeholder = `%%%MATH_INLINE_${mathVault.length}%%%`;
+    mathVault.push({ math: math.trim(), display: false });
+    return placeholder;
+  });
+
+  // 4. Przywróć kod przed parsowaniem markdownu
+  codeVault.forEach((code, idx) => {
+    protectedText = protectedText.replace(`%%%CODE_VAULT_${idx}%%%`, code);
+  });
+
+  // 5. Sparsuj Markdown
+  let html = "";
   try {
     const markedLib = window.marked;
     if (markedLib) {
-      if (typeof markedLib.parse === "function") return markedLib.parse(text);
-      if (typeof markedLib === "function") return markedLib(text);
-      if (markedLib.marked && typeof markedLib.marked.parse === "function") return markedLib.marked.parse(text);
+      if (typeof markedLib.parse === "function") html = markedLib.parse(protectedText);
+      else if (typeof markedLib === "function") html = markedLib(protectedText);
+      else if (markedLib.marked && typeof markedLib.marked.parse === "function") html = markedLib.marked.parse(protectedText);
+      else html = parseMarkdownFallback(protectedText);
+    } else {
+      html = parseMarkdownFallback(protectedText);
     }
   } catch (err) {
     console.warn("Marked.js error, using fallback:", err);
+    html = parseMarkdownFallback(protectedText);
   }
-  return parseMarkdownFallback(text);
+
+  // 6. Renderuj wzory KaTeX
+  const katexLib = window.katex || (typeof katex !== "undefined" ? katex : null);
+  mathVault.forEach((item, idx) => {
+    const targetPlaceholder = item.display ? `%%%MATH_BLOCK_${idx}%%%` : `%%%MATH_INLINE_${idx}%%%`;
+    let renderedMath = "";
+    if (katexLib && typeof katexLib.renderToString === "function") {
+      try {
+        renderedMath = katexLib.renderToString(item.math, {
+          displayMode: item.display,
+          throwOnError: false,
+        });
+      } catch (mathErr) {
+        console.warn("KaTeX render error:", mathErr);
+        renderedMath = `<span class="katex-fallback">${escapeHtml(item.math)}</span>`;
+      }
+    } else {
+      renderedMath = `<span class="katex-fallback">${escapeHtml(item.math)}</span>`;
+    }
+    html = html.replace(targetPlaceholder, renderedMath);
+  });
+
+  return html;
 };
 const showAlert = (message, type = "success") => {
   const alert = $("#alert");

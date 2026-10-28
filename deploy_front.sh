@@ -5,7 +5,7 @@ PROJECT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 FRONT_DIR="${PROJECT_DIR}/front"
 WEB_ROOT="${WEB_ROOT:-/var/www/mechacode-front}"
 
-required_files=("index.html" "styles.css" "app.js" "marked.min.js")
+required_files=("index.html" "styles.css" "app.js" "marked.min.js" "katex.min.js" "katex.min.css")
 
 for file in "${required_files[@]}"; do
     if [[ ! -f "${FRONT_DIR}/${file}" ]]; then
