@@ -17,7 +17,12 @@ from judge0_client import Judge0Error, enqueue_batch, get_batch_results
 
 BATCH_MAX_ITEMS = 100
 PW_EMAIL_DOMAIN = "pw.edu.pl"
-REGISTRATION_SECRET = os.getenv("REGISTRATION_SECRET", "TODO_CHANGE_ME")
+
+def get_registration_secret() -> str:
+    secret = os.getenv("REGISTRATION_SECRET", "TODO_CHANGE_ME").strip()
+    if (secret.startswith('"') and secret.endswith('"')) or (secret.startswith("'") and secret.endswith("'")):
+        secret = secret[1:-1].strip()
+    return secret
 
 # Jeśli tabele jeszcze nie istnieją, ta linijka je stworzy (przydatne przed ustawieniem Alembica)
 models.Base.metadata.create_all(bind=engine)
@@ -217,7 +222,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
             detail=f"Dozwolone są tylko adresy email w domenie {PW_EMAIL_DOMAIN}.",
         )
 
-    if user.registration_secret != REGISTRATION_SECRET:
+    if user.registration_secret.strip() != get_registration_secret():
         raise HTTPException(status_code=403, detail="Nieprawidłowe hasło rejestracyjne.")
 
     # Sprawdzenie czy email już istnieje
